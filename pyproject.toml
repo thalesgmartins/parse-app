@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "parse_backend"
+version = "0.0.1"
+description = "Conversão de documentos CNIS em tabela."
+readme = "README.md"
+requires-python = ">=3.8"
+
+dependencies = [
+    "pdfplumber",
+    "fastapi",
+    "uvicorn",
+    "python-multipart"
+]
+
+#[project.scripts]
+#parse_backend= "backend.__main__:run"
+
+[tool.setuptools.packages.find]
+where = ["src"]
