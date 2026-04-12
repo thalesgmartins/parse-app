@@ -16,8 +16,5 @@ dependencies = [
     "python-multipart"
 ]
 
-#[project.scripts]
-#parse_backend= "backend.__main__:run"
-
 [tool.setuptools.packages.find]
 where = ["src"]
