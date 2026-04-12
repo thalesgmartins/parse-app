@@ -5,7 +5,7 @@ import shutil
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 
-from backend.utils.extractor import extrair_dados_pdf
+from backend.utils.pdf import extrair_dados_pdf
 
 
 app = FastAPI(title="Parse-v1 API Modular")
