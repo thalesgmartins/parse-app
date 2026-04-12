@@ -1,6 +1,9 @@
 # Arquivos PDF
 *.pdf
 
+# Arquivos de Planilha
+*.csv
+
 # -----------------------------------------
 # Ignore do Python
 # -----------------------------------------
