@@ -5,18 +5,17 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
-def convert_dict_into_csv(dados: dict):
-    with open("resultado.csv", mode='w', encoding='utf-8', newline='') as arquivo:
-        escritor = csv.writer(arquivo, delimiter=';')
+def convert_dict_into_csv(dados: dict, arquivo):
+    escritor = csv.writer(arquivo, delimiter=';')
 
-        escritor.writerow(['Competência', 'Valor Consolidado'])
+    escritor.writerow(['Competência', 'Valor Consolidado'])
         
-        for mes, valor in dados.items():
+    for mes, valor in dados.items():
 
-            mes_seguro = f"01/{mes}"
+        mes_seguro = f"01/{mes}"
 
-            valor_seguro = valor.replace('.', '')
-            escritor.writerow([mes, valor_seguro])
+        valor_seguro = valor.replace('.', '')
+        escritor.writerow([mes_seguro, valor_seguro])
 
 
 
