@@ -15,16 +15,6 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Após isso o projeto pode ser executado com as seguintes formas
-
-```bash
-# Executando o módulo diretamente
-python3 -m parse-core
-
-# Executando o script do projeto
-ups
-```
-
 ## Como rodar
 
 ```bash
