@@ -6,8 +6,8 @@ import shutil
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import StreamingResponse
-
 from fastapi.middleware.cors import CORSMiddleware
+
 from backend.utils.pdf import extrair_dados_pdf
 from backend.utils.tabela import convert_dict_into_csv
 
@@ -17,9 +17,9 @@ app = FastAPI(title="Parse API")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"], # O endereço do seu Next.js
+    allow_origins=["http://localhost:3000"],
     allow_credentials=True,
-    allow_methods=["*"], # Permite POST, GET, etc
+    allow_methods=["*"],
     allow_headers=["*"],
 )
 
