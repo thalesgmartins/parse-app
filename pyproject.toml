@@ -18,5 +18,11 @@ dependencies = [
     "python-multipart"
 ]
 
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F"]
+
 [tool.setuptools.packages.find]
 where = ["src"]
