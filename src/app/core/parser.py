@@ -7,19 +7,6 @@ import pdfplumber
 _LOGGER = logging.getLogger(__name__)
 
 
-def eh_numero(valor_string: str) -> bool:
-    """Pega string de número no padrão brasileiro, trata para o padrão americano e tenta converter em float."""
-    limpo = valor_string.replace(".", "").replace(",", ".")
-    try:
-        float(limpo)
-        return True
-    except ValueError:
-        return False
-    except Exception as e:
-        _LOGGER.error("Erro inesperado: %s", e)
-        return False
-
-
 def validar_formato_data(texto: str) -> bool:
     """Verifica padrão XX/XXXX sem estourar o índice."""
     return len(texto) == 7 and texto[2] == "/"
