@@ -1,8 +1,11 @@
 """Parser pra extrair os dados de documentos CNIS."""
 
 import logging
+from pathlib import Path
 
 import pdfplumber
+
+from app.core.schemas import CnisCompetencia
 
 _LOGGER = logging.getLogger(__name__)
 
