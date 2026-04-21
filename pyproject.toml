@@ -12,7 +12,9 @@ requires-python = ">=3.8"
 dependencies = [
     "pdfplumber",
     "fastapi",
+    "supabase",
     "uvicorn",
+    "python-dotenv",
     "python-multipart"
 ]
 
