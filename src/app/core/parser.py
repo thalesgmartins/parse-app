@@ -20,12 +20,9 @@ def eh_numero(valor_string: str) -> bool:
         return False
 
 
-def eh_data(valor_string: str) -> bool:
-    """Pega uma string e verifica se segue o padrão de data. O documento do CNIS usa XX/XX."""
-    if valor_string[2] != "/":
-        return False
-
-    return True
+def validar_formato_data(texto: str) -> bool:
+    """Verifica padrão XX/XXXX sem estourar o índice."""
+    return len(texto) == 7 and texto[2] == "/"
 
 
 def extrair_dados_pdf(caminho_arquivo) -> dict:
