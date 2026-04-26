@@ -1,3 +1,5 @@
+"""Parse CLI Main"""
+
 import argparse
 import logging
 
