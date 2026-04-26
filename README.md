@@ -17,6 +17,18 @@ pip install -e .
 
 ## Como rodar
 
+Para rodar o projeto Web, deve-se usar o comando abaixo:
+
 ```bash
-uvicorn backend.main:app --reload
+uvicorn src.app.main:app --reload
 ```
+
+Para usar em modo CLI, deve-se usar:
+
+```bash
+python3 -m app.cli --path "caminho_do_arquivo"
+```
+
+## Qual a lógica para extrair os dados?
+
+explicar
