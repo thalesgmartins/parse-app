@@ -31,7 +31,7 @@ def processar_linhas_cnis(linhas: list[str]) -> list[CnisCompetencia]:
             item = CnisCompetencia(data_competencia=partes[0], valor=partes[3])
             resultados.append(item)
         except (ValueError, IndexError) as e:
-            _LOGGER.warning("Linha ignorada por erro de formato: %s -> %s", linha, e)
+            _LOGGER.debug("Linha ignorada por erro de formato: %s -> %s", linha, e)
             continue
 
     return resultados
