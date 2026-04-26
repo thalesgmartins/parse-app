@@ -1,0 +1,25 @@
+<div class="mt-8 bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
+    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
+        <h2 class="text-lg font-semibold text-slate-800">Resultados da Extração</h2>
+        <span class="text-sm text-slate-500">{{ dados|length }} competências encontradas</span>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-600">
+            <thead class="bg-slate-50 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <tr>
+                    <th class="px-6 py-3">Data Competência</th>
+                    <th class="px-6 py-3 text-right">Valor (R$)</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-200">
+                {% for item in dados %}
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="px-6 py-4">{{ item.data_competencia }}</td>
+                    <td class="px-6 py-4 text-right">R$ {{ "%.2f"|format(item.valor)|replace('.', ',') }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
