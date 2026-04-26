@@ -3,7 +3,7 @@ import logging
 
 from app.core.parser import extrair_dados_pdf
 
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(level=logging.INFO, format="[%(levelname)s|%(module)s|L%(lineno)d]: %(message)s")
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,4 +18,7 @@ if __name__ == "__main__":
     if args.verbose:
         _LOGGER.setLevel(logging.DEBUG)
 
-    extrair_dados_pdf(args.path)
+    dados_extraidos = extrair_dados_pdf(args.path)
+
+    for dado in dados_extraidos:
+        _LOGGER.info("Data: %s | Competência: R$ %s", dado.data_competencia, dado.valor)
