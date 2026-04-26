@@ -26,7 +26,7 @@ uvicorn src.app.main:app --reload
 Para usar em modo CLI, deve-se usar:
 
 ```bash
-python3 -m app.cli --path "caminho_do_arquivo"
+python3 -m app.cli --path "caminho_do_arquivo.pdf"
 ```
 
 ## Qual a lógica para extrair os dados?
