@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Cookie, Form, HTTPException, Response
+from fastapi.responses import RedirectResponse
 
 from app.database.connection import get_supabase
 
@@ -13,8 +14,12 @@ async def fazer_login(response: Response, email: str = Form(...), password: str 
         auth_response = supabase.auth.sign_in_with_password({"email": email, "password": password})
         token = auth_response.session.access_token
 
+        # Prepara a resposta para enviar para a dashboard.
+        response = RedirectResponse(url="/dashboard", status_code=303)
+
+        # Carimba o Cookie na resposta do redirecionamento
         response.set_cookie(key="access_token", value=token, httponly=True, samesite="lax", secure=False)
-        return {"status": "sucesso", "mensagem": "Login efetuado!"}
+        return response
     except Exception:
         raise HTTPException(status_code=401, detail="Email ou senha incorretos.")
 
