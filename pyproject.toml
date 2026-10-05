@@ -3,11 +3,11 @@ requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "parse_backend"
+name = "cnis-parse-app"
 version = "0.0.1"
-description = "Conversão de documentos CNIS em tabela."
+description = "SAAS para extrair dados de documentos CNIS."
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 
 dependencies = [
     "pdfplumber",
@@ -19,11 +19,18 @@ dependencies = [
     "python-multipart"
 ]
 
-[tool.ruff]
-line-length = 120
-
-[tool.ruff.lint]
-select = ["E", "F"]
-
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[project.optional-dependencies]
+dev = ["ruff", "pytest", "pytest-asyncio", "pre-commit"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM"]  # erros, imports, upgrades, bugbear, simplify
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
