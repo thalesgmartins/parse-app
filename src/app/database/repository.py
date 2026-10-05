@@ -8,7 +8,11 @@ def criar_cliente(advogado_id: str, nome: str, cpf: str | None = None):
     """Cadastra um novo cliente para o advogado logado."""
     supabase = get_supabase()
 
-    res = supabase.table("clientes").insert({"advogado_id": advogado_id, "nome": nome, "cpf": cpf}).execute()
+    res = (
+        supabase.table("clientes")
+        .insert({"advogado_id": advogado_id, "nome": nome, "cpf": cpf})
+        .execute()
+    )
     return res.data[0]
 
 
@@ -16,7 +20,13 @@ def listar_clientes(advogado_id: str):
     """Busca todos os clientes de um advogado para preencher o HTML."""
     supabase = get_supabase()
 
-    res = supabase.table("clientes").select("*").eq("advogado_id", advogado_id).order("nome").execute()
+    res = (
+        supabase.table("clientes")
+        .select("*")
+        .eq("advogado_id", advogado_id)
+        .order("nome")
+        .execute()
+    )
     return res.data
 
 

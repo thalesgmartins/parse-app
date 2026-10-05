@@ -5,7 +5,9 @@ import logging
 
 from app.core.parser import extrair_dados_pdf
 
-logging.basicConfig(level=logging.INFO, format="[%(levelname)s|%(module)s|L%(lineno)d]: %(message)s")
+logging.basicConfig(
+    level=logging.INFO, format="[%(levelname)s|%(module)s|L%(lineno)d]: %(message)s"
+)
 
 _LOGGER = logging.getLogger(__name__)
 

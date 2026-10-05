@@ -1,5 +1,8 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Cookie, Form, HTTPException, Response
 from fastapi.responses import RedirectResponse
+from supabase_auth import User
 
 from app.database.connection import get_supabase
 
@@ -7,7 +10,11 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
 @router.post("/login")
-async def fazer_login(response: Response, email: str = Form(...), password: str = Form(...)):
+async def fazer_login(
+    response: Response,
+    email: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+):
     supabase = get_supabase()
 
     try:
@@ -18,13 +25,17 @@ async def fazer_login(response: Response, email: str = Form(...), password: str 
         response = RedirectResponse(url="/dashboard", status_code=303)
 
         # Carimba o Cookie na resposta do redirecionamento
-        response.set_cookie(key="access_token", value=token, httponly=True, samesite="lax", secure=False)
+        response.set_cookie(
+            key="access_token", value=token, httponly=True, samesite="lax", secure=False
+        )
         return response
-    except Exception:
-        raise HTTPException(status_code=401, detail="Email ou senha incorretos.")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Email ou senha incorretos.") from e
 
 
-async def obter_usuario_logado(access_token: str = Cookie(None)):
+async def obter_usuario_logado(
+    access_token: Annotated[str | None, Cookie()] = None,
+) -> User:
     """Verifica o cookie e retorna os dados do usuário do Supabase."""
     if not access_token:
         raise HTTPException(status_code=401, detail="Não autenticado.")
@@ -35,5 +46,5 @@ async def obter_usuario_logado(access_token: str = Cookie(None)):
         # Valida o token com o Supabase e pega os dados do usuário
         user_response = supabase.auth.get_user(access_token)
         return user_response.user
-    except Exception:
-        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
+    except Exception as e:
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado.") from e

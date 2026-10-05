@@ -1,6 +1,9 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
+from supabase_auth import User
 
 from app.api.auth import obter_usuario_logado
 from app.core.parser import extrair_dados_pdf
@@ -32,7 +35,11 @@ def processar_upload_cnis(arquivo_file, nome_arquivo: str, cliente_id: str, advo
 
 
 @router.post("/clientes")
-async def cadastrar_novo_cliente(nome: str = Form(...), cpf: str = Form(None), usuario=Depends(obter_usuario_logado)):
+async def cadastrar_novo_cliente(
+    nome: Annotated[str, Form()],
+    usuario: Annotated[User, Depends(obter_usuario_logado)],
+    cpf: Annotated[str | None, Form()] = None,
+):
     # Cria o cliente no banco
     criar_cliente(advogado_id=usuario.id, nome=nome, cpf=cpf)
 
@@ -42,7 +49,10 @@ async def cadastrar_novo_cliente(nome: str = Form(...), cpf: str = Form(None), u
 
 
 @router.post("/extrair")
-async def extrair_documento_cnis(arquivo: UploadFile = File(...), usuario=Depends(obter_usuario_logado)):
+async def extrair_documento_cnis(
+    arquivo: Annotated[UploadFile, File()],
+    usuario: Annotated[User, Depends(obter_usuario_logado)],
+):
     if arquivo.content_type != "application/pdf":
         raise HTTPException(status_code=400, detail="Apenas arquivos PDF são aceitos.")
 
@@ -50,15 +60,15 @@ async def extrair_documento_cnis(arquivo: UploadFile = File(...), usuario=Depend
         dados = processar_upload_cnis(arquivo.file, arquivo.filename, usuario.id)
         return {"status": "sucesso", "nome_arquivo": arquivo.filename, "dados": dados}
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Erro ao processar o PDF: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erro ao processar o PDF: {str(e)}") from e
 
 
 @router.post("/extrair-html")
 async def extrair_documento_cnis_html(
     request: Request,
-    cliente_id: str = Form(...),
-    arquivo: UploadFile = File(...),
-    usuario=Depends(obter_usuario_logado),
+    cliente_id: Annotated[str, Form()],
+    arquivo: Annotated[UploadFile, File()],
+    usuario: Annotated[User, Depends(obter_usuario_logado)],
 ):
     if arquivo.content_type != "application/pdf":
         return '<div class="p-4 bg-red-100 text-red-700">Apenas arquivos PDF.</div>'
@@ -67,6 +77,8 @@ async def extrair_documento_cnis_html(
         # Chama o MESMO maestro
         dados = processar_upload_cnis(arquivo.file, arquivo.filename, cliente_id, usuario.id)
 
-        return templates.TemplateResponse(request=request, name="tabela_resultados.html", context={"dados": dados})
+        return templates.TemplateResponse(
+            request=request, name="tabela_resultados.html", context={"dados": dados}
+        )
     except Exception as e:
         return f'<div class="p-4 bg-red-100 text-red-700">Erro ao processar: {str(e)}</div>'

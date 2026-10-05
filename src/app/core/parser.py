@@ -45,7 +45,8 @@ def extrair_dados_pdf(caminho_arquivo: Path) -> list[CnisCompetencia]:
         # Como a formatação do CNIS não é em tabela, rodamos todas as páginas extraindo os textos.
         # A variável 'pagina' é um objeto do tipo pdfplumber.Page
         for pagina in pdf.pages:
-            # Tem sido a forma mais consistente de pegar dados, vai puxar uma mega string com textos.
+            # Tem sido a forma mais consistente de pegar dados,
+            # vai puxar uma mega string com textos.
             texto = pagina.extract_text()
 
             if texto:
