@@ -24,10 +24,10 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 
 # Copia o fonte
-COPY src/backend/ ./src/backend/
+COPY src/ ./src/
 
 # Instala o projeto e dependências
 RUN pip install --no-cache-dir .
 
-# Comando para iniciar o Monitor
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Comando para iniciar a API
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
