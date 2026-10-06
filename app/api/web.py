@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -6,7 +8,7 @@ from app.api.auth import obter_usuario_logado
 from app.database.repository import listar_clientes
 
 router = APIRouter(tags=["Frontend"])
-templates = Jinja2Templates(directory="src/app/web/templates")
+templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "web" / "templates")
 
 
 @router.get("/dashboard")

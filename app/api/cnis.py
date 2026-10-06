@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, File, Form, HTTPException, Request, UploadFile
@@ -11,7 +12,7 @@ from app.database.connection import get_supabase
 from app.database.repository import criar_cliente, salvar_contribuicoes
 
 router = APIRouter(prefix="/cnis", tags=["Processamento CNIS"])
-templates = Jinja2Templates(directory="src/app/web/templates")
+templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "web" / "templates")
 
 
 def processar_upload_cnis(arquivo_file, nome_arquivo: str, cliente_id: str, advogado_id: str):

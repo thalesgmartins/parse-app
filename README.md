@@ -1,4 +1,11 @@
-# parse-core
+# Cnis Parse App
+
+A ideia desse projeto partiu de um problema relatada por um advogado que possui um escritório independente, onde foi feita a construção de um MVP prévio, mas com seu desenvolvimento aprofundado para a matéria de `ARQUITETURA DE SOFTWARE SAAS` no Sexto Semestre de Engenharia de Computação.
+
+A ferramenta consiste de um Software As a Service para extrair, vizualizar e exportar os dados de Extratos de Contribuição (CNIS), usados pelo INSS para calcular aposentadorias, pensões e auxílios.
+
+---
+
 
 ## Setup
 
@@ -20,7 +27,7 @@ pip install -e .
 Para rodar o projeto Web, deve-se usar o comando abaixo:
 
 ```bash
-uvicorn src.app.main:app --reload
+uvicorn app.main:app --reload
 ```
 
 Para usar em modo CLI, deve-se usar:

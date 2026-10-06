@@ -20,7 +20,8 @@ dependencies = [
 ]
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["."]
+include = ["app*"]
 
 [project.optional-dependencies]
 dev = ["ruff", "pytest", "pytest-asyncio", "pre-commit"]

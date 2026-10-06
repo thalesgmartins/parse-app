@@ -4,6 +4,7 @@ docker-compose.yml
 
 # Arquivos PDF
 *.pdf
+!docs/*.pdf
 
 # Arquivos de Planilha
 *.csv

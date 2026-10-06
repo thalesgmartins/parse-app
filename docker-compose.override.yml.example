@@ -6,13 +6,13 @@
 # |_|   \__,_|_|  |___/\___/_/    \_\ .__/| .__/  |____/ \__,_|\___|_|\_\___|_| |_|\__,_|
 #                                   | |   | |
 services:
-  parse-backend:
+  parse-app:
     build:
       context: .
       dockerfile: Dockerfile
     # Monta o codigo local para hot-reload sem precisar rebuildar a imagem:
     volumes:
-      - ./src:/app/src
+      - ./app:/app/app
     # Ativa o reload automatico do Uvicorn para desenvolvimento local:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: "no"

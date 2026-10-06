@@ -24,7 +24,7 @@ WORKDIR /app
 COPY pyproject.toml README.md ./
 
 # Copia o fonte
-COPY src/ ./src/
+COPY app/ ./app/
 
 # Instala o projeto e dependências
 RUN pip install --no-cache-dir .
