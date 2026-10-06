@@ -10,6 +10,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+    image: parse-app:local
     # Monta o codigo local para hot-reload sem precisar rebuildar a imagem:
     volumes:
       - ./app:/app/app
