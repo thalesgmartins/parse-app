@@ -5,10 +5,15 @@ import logging
 
 from app.core.parser import extrair_dados_pdf
 
-logging.basicConfig(
-    level=logging.INFO, format="[%(levelname)s|%(module)s|L%(lineno)d]: %(message)s"
-)
+VERMELHO = "\033[31m"
+VERDE = "\033[32m"
+AZUL = "\033[34m"
+RESET = "\033[0m"
 
+logging.basicConfig(
+    level=logging.INFO,
+    format=f"{VERDE}%(asctime)s{RESET} | {VERMELHO}%(levelname)s{RESET} | {AZUL}%(filename)s:%(lineno)d{RESET} | %(message)s",  # noqa: E501
+)
 _LOGGER = logging.getLogger(__name__)
 
 
