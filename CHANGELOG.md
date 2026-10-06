@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/thalesgmartins/parse-app/compare/v0.1.0...v0.1.1) (2026-10-06)
+
+
+### Bug Fixes
+
+* melhoria na configuração de logs e removida pasta com logs em arquivo ([748c63b](https://github.com/thalesgmartins/parse-app/commit/748c63b678d2679d0ece58c8f29fe45f26840020))
+
 ## 0.1.0 (2026-10-06)
 
 
