@@ -4,45 +4,93 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParseApp - Dashboard</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    <script src="/static/js/htmx.min.js"></script>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-8">
+<body class="bg-slate-100 text-slate-800 font-sans min-h-screen p-4 md:p-8">
 
-    <div class="max-w-3xl mx-auto bg-white p-8 rounded-xl shadow-sm border border-slate-200">
-        <div class="flex justify-between items-center mb-6">
-            <h1 class="text-2xl font-bold text-slate-900">Dashboard do Escritório</h1>
-            <span class="text-sm text-slate-500">Logado como: {{ usuario_email }}</span>
-        </div>
+    <div class="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-sm border border-slate-200">
+        <!-- Cabeçalho com Identidade e Ação de Logout -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-6 mb-6 border-b border-slate-200">
+            <div>
+                <div class="flex items-center gap-2">
+                    <span class="text-xl font-black tracking-tight text-blue-700">ParseApp</span>
+                    <span class="text-slate-300">|</span>
+                    <h1 class="text-xl font-bold text-slate-900">Dashboard do Escritório</h1>
+                </div>
+                <p class="text-xs text-slate-500 mt-1">Conectado como: <strong class="text-slate-700 font-medium">{{ usuario_email }}</strong></p>
+            </div>
+            <a href="/auth/logout" class="inline-flex items-center gap-1.5 text-xs font-medium text-red-600 hover:text-red-700 bg-red-50 hover:bg-red-100 px-3 py-1.5 rounded-md transition-colors border border-red-200">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Sair
+            </a>
+        </header>
 
-        <div class="bg-slate-50 p-4 rounded-md border border-slate-200 mb-8">
-            <h2 class="text-sm font-semibold text-slate-700 mb-3">1. Cadastrar Novo Cliente</h2>
-            <form action="/cnis/clientes" method="POST" class="flex gap-4">
-                <input type="text" name="nome" placeholder="Nome Completo" required class="flex-1 px-3 py-2 border rounded-md text-sm">
-                <input type="text" name="cpf" placeholder="CPF (Opcional)" class="w-1/3 px-3 py-2 border rounded-md text-sm">
-                <button type="submit" class="bg-slate-800 text-white px-4 py-2 rounded-md text-sm hover:bg-slate-700">Salvar Cliente</button>
+        <!-- Seção 1: Cadastro de Clientes -->
+        <section class="bg-slate-50 p-5 rounded-lg border border-slate-200 mb-6">
+            <h2 class="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-slate-800 text-white text-xs font-bold">1</span>
+                Cadastrar Novo Cliente
+            </h2>
+            <form action="/cnis/clientes" method="POST" class="flex flex-col sm:flex-row gap-3">
+                <input type="text" name="nome" placeholder="Nome Completo do Cliente" required
+                       class="flex-1 px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <input type="text" name="cpf" placeholder="CPF (Opcional)"
+                       class="sm:w-1/3 px-3 py-2 border border-slate-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white">
+                <button type="submit"
+                        class="bg-slate-800 hover:bg-slate-900 text-white font-medium px-4 py-2 rounded-md text-sm transition-colors shadow-sm">
+                    Salvar Cliente
+                </button>
             </form>
-        </div>
+        </section>
 
-        <div class="bg-white p-4 rounded-md border border-slate-200">
-            <h2 class="text-sm font-semibold text-slate-700 mb-3">2. Processar CNIS do Cliente</h2>
+        <!-- Seção 2: Processamento do Extrato CNIS -->
+        <section class="bg-white p-5 rounded-lg border border-slate-200">
+            <h2 class="text-sm font-semibold text-slate-800 mb-3 flex items-center gap-2">
+                <span class="flex items-center justify-center w-5 h-5 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
+                Processar Extrato CNIS (PDF)
+            </h2>
 
-            <form hx-post="/cnis/extrair-html" hx-encoding="multipart/form-data" hx-target="#resultado-aqui" class="flex items-center gap-4">
+            <form hx-post="/cnis/extrair-html"
+                  hx-encoding="multipart/form-data"
+                  hx-target="#resultado-aqui"
+                  hx-indicator="#loading-indicator"
+                  hx-disabled-elt="#btn-extrair"
+                  class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
 
-                <select name="cliente_id" required class="w-1/3 px-3 py-2 text-sm border border-slate-300 rounded-md bg-white">
+                <select name="cliente_id" required
+                        class="sm:w-1/3 px-3 py-2 text-sm border border-slate-300 rounded-md bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">Selecione o Cliente...</option>
                     {% for cliente in clientes %}
                         <option value="{{ cliente.id }}">{{ cliente.nome }}</option>
                     {% endfor %}
                 </select>
 
-                <input type="file" name="arquivo" accept="application/pdf" required class="flex-1 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer">
+                <input type="file" name="arquivo" accept="application/pdf" required
+                       class="flex-1 text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100 cursor-pointer border border-slate-200 rounded-md py-1 px-2">
 
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-6 rounded-md transition">Extrair</button>
+                <button type="submit" id="btn-extrair"
+                        class="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 disabled:cursor-not-allowed text-white font-medium py-2 px-6 rounded-md text-sm transition-colors shadow-sm flex items-center justify-center gap-2">
+                    <span>Extrair</span>
+                    <!-- Spinner Animado HTMX -->
+                    <svg id="loading-indicator" class="htmx-indicator animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                    </svg>
+                </button>
             </form>
-        </div>
 
-        <div id="resultado-aqui" class="mt-8"></div>
+            <!-- Mensagem de progresso informativa do HTMX -->
+            <div class="htmx-indicator mt-3 text-xs text-blue-600 flex items-center gap-1.5" id="loading-indicator">
+                <span class="inline-block w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+                Processando páginas do extrato CNIS... Isso pode levar alguns segundos.
+            </div>
+        </section>
+
+        <!-- Container Alvo do HTMX -->
+        <div id="resultado-aqui" class="mt-6"></div>
     </div>
 
 </body>

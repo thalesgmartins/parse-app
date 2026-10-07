@@ -8,6 +8,7 @@ from pathlib import Path
 from alembic import command
 from alembic.config import Config
 from fastapi import FastAPI
+from fastapi.staticfiles import StaticFiles
 
 from app.api import auth, cnis, web
 
@@ -40,6 +41,10 @@ async def lifespan(app: FastAPI):
 
 # Cria o objeto app que o FastAPI usa.
 app = FastAPI(title="Parse API", lifespan=lifespan)
+
+STATIC_DIR = Path(__file__).resolve().parent / "web" / "static"
+if STATIC_DIR.exists():
+    app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
 
 # Adiciona os routers do app
 app.include_router(cnis.router)
