@@ -28,7 +28,7 @@ where = ["."]
 include = ["app*"]
 
 [project.optional-dependencies]
-dev = ["ruff", "pytest", "pytest-asyncio", "pre-commit"]
+dev = ["ruff", "pytest", "pytest-asyncio", "pre-commit", "httpx2>=2.13.1"]
 
 [tool.ruff]
 line-length = 100
