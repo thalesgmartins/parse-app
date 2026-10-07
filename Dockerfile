@@ -20,8 +20,11 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
-# Copia arquivos de definição
-COPY pyproject.toml README.md ./
+# Copia arquivos de definição e configuração do banco
+COPY pyproject.toml README.md alembic.ini ./
+
+# Copia as migrações do banco
+COPY alembic/ ./alembic/
 
 # Copia o fonte
 COPY app/ ./app/
