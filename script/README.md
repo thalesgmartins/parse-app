@@ -26,8 +26,16 @@ Execute os comandos **a partir da raiz do projeto**.
 
 ---
 
-### PostgreSQL (`scripts/postgres/`)
+### PostgreSQL (`script/postgres/`)
 
 | Script | Descrição | Como Executar |
 | :--- | :--- | :--- |
-| `checar-tabelas.sh` | Conecta via `docker compose exec` e exibe as tabelas com `\dt`. | `./scripts/postgres/checar-tabelas.sh` |
+| `checar-tabelas.sh` | Conecta via `docker compose exec` e exibe as tabelas com `\dt`. | `./script/postgres/checar-tabelas.sh` |
+
+---
+
+### API (`script/api/`)
+
+| Script | Descrição | Como Executar |
+| :--- | :--- | :--- |
+| `adicionar-usuario.sh` | Cadastra um usuário/advogado via endpoint `/auth/register` com validações. | `./script/api/adicionar-usuario.sh [NOME] [EMAIL] [SENHA]` |
