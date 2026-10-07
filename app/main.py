@@ -1,6 +1,7 @@
 """Parse Api+Web Main."""
 
 import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -25,16 +26,15 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Executa todas as migrações pendêntes ao iniciar o serviço
-
-    ini_path = BASE_DIR / "alembic.ini"
-
-    if ini_path.exists():
-        _LOGGER.info("Executando migrações do banco de dados com Alembic...")
-        alembic_cfg = Config(str(ini_path))
-        alembic_cfg.set_main_option("script_location", str(BASE_DIR / "alembic"))
-        command.upgrade(alembic_cfg, "head")
-        _LOGGER.info("Migrações concluídas com sucesso!")
+    # Executa todas as migrações pendentes ao iniciar o serviço (exceto em testes)
+    if not os.getenv("TESTING"):
+        ini_path = BASE_DIR / "alembic.ini"
+        if ini_path.exists():
+            _LOGGER.info("Executando migrações do banco de dados com Alembic...")
+            alembic_cfg = Config(str(ini_path))
+            alembic_cfg.set_main_option("script_location", str(BASE_DIR / "alembic"))
+            command.upgrade(alembic_cfg, "head")
+            _LOGGER.info("Migrações concluídas com sucesso!")
     yield
 
 
