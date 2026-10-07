@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.3.0](https://github.com/thalesgmartins/parse-app/compare/v0.2.0...v0.3.0) (2026-10-07)
+
+
+### Features
+
+* **ui:** adiciona logout, indicador de loading htmx e tratamento de erros visuais ([8c34054](https://github.com/thalesgmartins/parse-app/commit/8c34054d7832049556941916daca484b29b88f6d))
+* **web:** adiciona suporte e arquivos estaticos locais para tailwind e htmx ([274124b](https://github.com/thalesgmartins/parse-app/commit/274124b5cc56c65cac262b043e151749d653e8f8))
+
 ## [0.2.0](https://github.com/thalesgmartins/parse-app/compare/v0.1.2...v0.2.0) (2026-10-07)
 
 
