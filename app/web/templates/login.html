@@ -4,32 +4,41 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParseApp - Login</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
 </head>
-<body class="bg-slate-50 flex items-center justify-center min-h-screen">
+<body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
 
     <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 w-full max-w-md">
         <div class="text-center mb-8">
-            <h1 class="text-3xl font-bold text-slate-900">ParseApp</h1>
-            <p class="text-slate-500 mt-2">Plataforma de Extração de CNIS</p>
+            <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">ParseApp</h1>
+            <p class="text-slate-500 text-sm mt-1">Plataforma de Extração e Análise de CNIS</p>
         </div>
 
-        <form action="/auth/login" method="POST" class="space-y-6">
+        {% if erro %}
+        <div class="mb-5 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-xs flex items-center gap-2">
+            <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>{{ erro }}</span>
+        </div>
+        {% endif %}
+
+        <form action="/auth/login" method="POST" class="space-y-5">
             <div>
-                <label for="email" class="block text-sm font-medium text-slate-700">E-mail Profissional</label>
-                <input type="email" name="email" id="email" required
-                       class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">E-mail Profissional</label>
+                <input type="email" name="email" id="email" required placeholder="advogado@escritorio.com"
+                       class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
             </div>
 
             <div>
-                <label for="password" class="block text-sm font-medium text-slate-700">Senha</label>
-                <input type="password" name="password" id="password" required
-                       class="mt-1 block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm shadow-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500">
+                <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Senha de Acesso</label>
+                <input type="password" name="password" id="password" required placeholder="••••••••"
+                       class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
             </div>
 
             <button type="submit"
-                    class="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors">
-                Entrar
+                    class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors">
+                Entrar no Sistema
             </button>
         </form>
     </div>

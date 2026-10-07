@@ -97,9 +97,24 @@ async def extrair_documento_cnis_html(
     usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
     db: Annotated[Session, Depends(get_db)],
 ):
-    """Processa o PDF e retorna um fragmento HTML via HTMX para a dashboard."""
+    """Processa o extrato CNIS em PDF e renderiza o fragmento HTML via HTMX.
+
+    Args:
+        request: Objeto da requisição HTTP.
+        cliente_id: Identificador único do cliente selecionado.
+        arquivo: Arquivo PDF enviado no formulário multipart.
+        usuario: Advogado autenticado via sessão/cookie.
+        db: Sessão ativa do banco de dados relacional.
+
+    Returns:
+        TemplateResponse contendo a tabela de resultados ou o card de erro.
+    """
     if arquivo.content_type != "application/pdf":
-        return '<div class="p-4 bg-red-100 text-red-700">Apenas arquivos PDF.</div>'
+        return templates.TemplateResponse(
+            request=request,
+            name="tabela_resultados.html",
+            context={"erro": "Apenas arquivos no formato PDF são aceitos para análise do CNIS."},
+        )
 
     try:
         dados = processar_upload_cnis(
@@ -116,4 +131,8 @@ async def extrair_documento_cnis_html(
             context={"dados": dados},
         )
     except Exception as e:
-        return f'<div class="p-4 bg-red-100 text-red-700">Erro ao processar: {str(e)}</div>'
+        return templates.TemplateResponse(
+            request=request,
+            name="tabela_resultados.html",
+            context={"erro": f"Não foi possível processar o documento: {str(e)}"},
+        )
