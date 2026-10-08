@@ -2,7 +2,7 @@
 
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.schemas import CnisCompetencia
@@ -176,3 +176,21 @@ def registrar_log_extracao(
     db.commit()
     db.refresh(log)
     return log
+
+
+def contar_extracos(
+    db: Session,
+    advogado_id: uuid.UUID | str,
+) -> int:
+    """Retorna o total de extrações de CNIS processadas pelo advogado.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        advogado_id: Identificador do advogado.
+
+    Returns:
+        Número total de extrações registradas.
+    """
+    id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
+    stmt = select(func.count(LogExtracao.id)).where(LogExtracao.advogado_id == id_uuid)
+    return db.scalar(stmt) or 0
