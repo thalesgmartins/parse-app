@@ -1,6 +1,7 @@
-"""Parser pra extrair os dados de documentos CNIS."""
+"""Parser para extração de dados estruturados de extratos CNIS."""
 
 import logging
+import re
 from pathlib import Path
 
 import pdfplumber
@@ -9,48 +10,73 @@ from app.core.schemas import CnisCompetencia
 
 _LOGGER = logging.getLogger(__name__)
 
-
-def validar_formato_data(texto: str) -> bool:
-    """Verifica padrão XX/XXXX sem estourar o índice."""
-    return len(texto) == 7 and texto[2] == "/"
+RE_DATA = re.compile(r"^\d{2}/\d{4}$")
+RE_VALOR_BR = re.compile(r"^(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}$")
 
 
 def processar_linhas_cnis(linhas: list[str]) -> list[CnisCompetencia]:
-    """Processa uma lista de strings em uma lista de Competências."""
-    resultados = []
+    """Processa linhas de texto do CNIS extraindo pares de competência e valor.
+
+    O extrato previdenciário frequentemente organiza as remunerações em até 3
+    colunas paralelas, gerando múltiplos pares sequenciais de data e valor em
+    uma única linha textual.
+
+    Args:
+        linhas: Lista de strings com o conteúdo textual bruto das páginas.
+
+    Returns:
+        Lista de competências estruturadas e validadas.
+    """
+    resultados: list[CnisCompetencia] = []
 
     for linha in linhas:
-        # Separa a linha em espaços ou quebras (palavras)
         partes = linha.split()
-
-        # Filtros básicos de segurança
-        if len(partes) < 4 or not validar_formato_data(partes[0]):
+        if not partes or not RE_DATA.match(partes[0]):
             continue
 
-        try:
-            item = CnisCompetencia(data_competencia=partes[0], valor=partes[3])
-            resultados.append(item)
-        except (ValueError, IndexError) as e:
-            _LOGGER.debug("Linha ignorada por erro de formato: %s -> %s", linha, e)
-            continue
+        _LOGGER.debug("Processando partes filtradas: %s", partes)
+        i = 0
+        while i + 1 < len(partes):
+            competencia = partes[i]
+            valor_candidato = partes[i + 1]
+
+            if RE_DATA.match(competencia) and RE_VALOR_BR.match(valor_candidato):
+                try:
+                    item = CnisCompetencia(
+                        data_competencia=competencia,
+                        valor=valor_candidato,
+                    )
+                    resultados.append(item)
+                except (ValueError, TypeError) as exc:
+                    _LOGGER.debug(
+                        "Falha na validação do par (%s, %s): %s",
+                        competencia,
+                        valor_candidato,
+                        exc,
+                    )
+                i += 2
+            else:
+                break
 
     return resultados
 
 
-def extrair_dados_pdf(caminho_arquivo: Path) -> list[CnisCompetencia]:
-    """Abre o arquivo e chama o processador de linhas."""
-    todas_as_linhas = []
+def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
+    """Extrai texto de todas as páginas do PDF e processa as competências.
 
-    with pdfplumber.open(caminho_arquivo) as pdf:
-        # Como a formatação do CNIS não é em tabela, rodamos todas as páginas extraindo os textos.
-        # A variável 'pagina' é um objeto do tipo pdfplumber.Page
+    Args:
+        caminho_arquivo: Caminho do arquivo PDF do extrato CNIS a ser lido.
+
+    Returns:
+        Lista de competências identificadas no documento.
+    """
+    caminho = Path(caminho_arquivo)
+    todas_as_linhas: list[str] = []
+
+    with pdfplumber.open(caminho) as pdf:
         for pagina in pdf.pages:
-            # Tem sido a forma mais consistente de pegar dados,
-            # vai puxar uma mega string com textos.
             texto = pagina.extract_text()
-
             if texto:
-                # Separamos os textos em linhas pra conseguir filtrar só as competências.
                 todas_as_linhas.extend(texto.split("\n"))
 
     return processar_linhas_cnis(todas_as_linhas)
