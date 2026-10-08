@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.5.1](https://github.com/thalesgmartins/parse-app/compare/v0.5.0...v0.5.1) (2026-10-08)
+
+
+### Documentation
+
+* **arch:** adiciona modelo C4, ADRs e mapeamento de conformidade LGPD ([c737a3b](https://github.com/thalesgmartins/parse-app/commit/c737a3b0af46223c46690940b0dcfabbd9b02d92))
+* atualiza README principal com arquitetura, setup e logica de extracao do cnis ([5d95723](https://github.com/thalesgmartins/parse-app/commit/5d9572390c0e08c51a75e07b21e1f8d2f5739ed5))
+* documentacao completa do projeto, modelo C4, ADRs e conformidade LGPD ([5005f49](https://github.com/thalesgmartins/parse-app/commit/5005f49f201f37fb23114b9415995f3174aaf7fc))
+
 ## [0.5.0](https://github.com/thalesgmartins/parse-app/compare/v0.4.0...v0.5.0) (2026-10-08)
 
 
