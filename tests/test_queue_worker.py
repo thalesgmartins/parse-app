@@ -178,8 +178,8 @@ def test_processar_job_extracao_sucesso_e_limpeza_arquivo(
     # Contribuições persistidas
     contribuicoes = obter_contribuicoes_por_job(db_session, job_id)
     assert len(contribuicoes) == 2
-    assert contribuicoes[0].data_competencia == "06/2021"
-    assert contribuicoes[1].data_competencia == "05/2021"
+    assert contribuicoes[0].data_competencia == "05/2021"
+    assert contribuicoes[1].data_competencia == "06/2021"
 
     # Arquivo temporário deve ter sido removido pelo bloco finally
     assert not arquivo_temp.exists()

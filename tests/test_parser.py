@@ -111,3 +111,27 @@ def test_processar_linhas_interrompe_ao_encontrar_indicador_ou_invalido() -> Non
     assert len(resultado) == 1
     assert resultado[0].data_competencia == "01/2024"
     assert resultado[0].valor == 1412.00
+
+
+def test_processar_linhas_ordenacao_cronologica_estrita() -> None:
+    """Verifica se competências desordenadas são retornadas em ordem cronológica."""
+    # Arrange
+    linhas = [
+        "12/2025 2.000,00 12/2024 1.800,00",
+        "11/2025 1.950,00 11/2024 1.750,00",
+        "10/2024 1.700,00 01/2025 1.850,00",
+    ]
+
+    # Act
+    resultado = processar_linhas_cnis(linhas)
+
+    # Assert
+    competencias = [item.data_competencia for item in resultado]
+    assert competencias == [
+        "10/2024",
+        "11/2024",
+        "12/2024",
+        "01/2025",
+        "11/2025",
+        "12/2025",
+    ]
