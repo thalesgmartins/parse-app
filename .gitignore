@@ -2,6 +2,9 @@
 docker-compose.override.yml
 docker-compose.yml
 
+# Materiais e referências internas de design (não versionados)
+.design/
+
 # Arquivos PDF
 *.pdf
 !docs/*.pdf
