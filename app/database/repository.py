@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.core.schemas import CnisCompetencia
 from app.core.security import hash_password
-from app.database.models import Advogado, Cliente, Contribuicao, LogExtracao
+from app.database.models import Advogado, Cliente, Contribuicao, JobExtracao, LogExtracao
 
 
 def obter_advogado_por_email(db: Session, email: str) -> Advogado | None:
@@ -119,23 +119,31 @@ def listar_clientes(
 
 def salvar_contribuicoes(
     db: Session,
-    cliente_id: uuid.UUID | str,
+    cliente_id: uuid.UUID | str | None,
     lista: list[CnisCompetencia],
+    job_id: uuid.UUID | str | None = None,
 ) -> list[Contribuicao]:
-    """Salva a lista de competências e salários vinculados a um cliente.
+    """Salva a lista de competências e salários vinculados a um cliente e/ou job.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
-        cliente_id: Identificador do cliente.
+        cliente_id: Identificador do cliente (opcional).
         lista: Lista de competências extraídas do CNIS.
+        job_id: Identificador do job de extração (opcional).
 
     Returns:
         Lista de instâncias de Contribuicao salvas no banco.
     """
-    id_uuid = cliente_id if isinstance(cliente_id, uuid.UUID) else uuid.UUID(str(cliente_id))
+    c_uuid = (
+        cliente_id
+        if (cliente_id is None or isinstance(cliente_id, uuid.UUID))
+        else uuid.UUID(str(cliente_id))
+    )
+    j_uuid = job_id if (job_id is None or isinstance(job_id, uuid.UUID)) else uuid.UUID(str(job_id))
     novas_contribuicoes: list[Contribuicao] = [
         Contribuicao(
-            cliente_id=id_uuid,
+            cliente_id=c_uuid,
+            job_id=j_uuid,
             data_competencia=c.data_competencia,
             valor=c.valor,
         )
@@ -194,3 +202,192 @@ def contar_extracos(
     id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
     stmt = select(func.count(LogExtracao.id)).where(LogExtracao.advogado_id == id_uuid)
     return db.scalar(stmt) or 0
+
+
+def criar_job_extracao(
+    db: Session,
+    job_id: uuid.UUID,
+    advogado_id: uuid.UUID | str,
+    nome_arquivo: str,
+    cliente_id: uuid.UUID | str | None = None,
+    caminho_arquivo_temp: str | None = None,
+) -> JobExtracao:
+    """Registra um novo trabalho de processamento na fila do banco de dados.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        job_id: Identificador único gerado para o job.
+        advogado_id: Identificador do advogado solicitante.
+        nome_arquivo: Nome original do arquivo PDF.
+        cliente_id: Identificador do cliente associado (opcional).
+        caminho_arquivo_temp: Caminho efêmero onde o arquivo foi salvo no disco.
+
+    Returns:
+        Instância de JobExtracao persistida com status 'pending'.
+    """
+    adv_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
+    cli_uuid = (
+        cliente_id
+        if (cliente_id is None or isinstance(cliente_id, uuid.UUID))
+        else uuid.UUID(str(cliente_id))
+    )
+    job = JobExtracao(
+        id=job_id,
+        advogado_id=adv_uuid,
+        cliente_id=cli_uuid,
+        nome_arquivo=nome_arquivo,
+        status="pending",
+        caminho_arquivo_temp=caminho_arquivo_temp,
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def obter_job_por_id(
+    db: Session,
+    job_id: uuid.UUID | str,
+) -> JobExtracao | None:
+    """Busca um trabalho de extração pelo identificador único.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        job_id: Identificador único do job.
+
+    Returns:
+        Instância de JobExtracao ou None se inexistente.
+    """
+    id_uuid = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(str(job_id))
+    stmt = select(JobExtracao).where(JobExtracao.id == id_uuid)
+    return db.scalar(stmt)
+
+
+def obter_proximo_job(db: Session) -> JobExtracao | None:
+    """Busca o próximo trabalho pendente na fila utilizando concorrência segura.
+
+    Em bancos de dados compatíveis (como PostgreSQL), aplica
+    FOR UPDATE SKIP LOCKED para prevenir condições de corrida entre múltiplos
+    workers simultâneos.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+
+    Returns:
+        Instância do próximo JobExtracao pendente ou None se a fila estiver vazia.
+    """
+    stmt = (
+        select(JobExtracao)
+        .where(JobExtracao.status == "pending")
+        .order_by(JobExtracao.created_at.asc())
+        .limit(1)
+    )
+    if db.bind and db.bind.dialect.name != "sqlite":
+        stmt = stmt.with_for_update(skip_locked=True)
+    return db.scalar(stmt)
+
+
+def bloquear_job_para_processamento(
+    db: Session,
+    job_id: uuid.UUID | str,
+) -> JobExtracao | None:
+    """Bloqueia atomicamente um job pendente e altera status para 'processing'.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        job_id: Identificador do job a ser bloqueado.
+
+    Returns:
+        Instância de JobExtracao em processamento ou None caso indisponível.
+    """
+    id_uuid = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(str(job_id))
+    stmt = select(JobExtracao).where(
+        JobExtracao.id == id_uuid,
+        JobExtracao.status == "pending",
+    )
+    if db.bind and db.bind.dialect.name != "sqlite":
+        stmt = stmt.with_for_update(skip_locked=True)
+    job = db.scalar(stmt)
+    if not job:
+        return None
+
+    job.status = "processing"
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def concluir_job(
+    db: Session,
+    job_id: uuid.UUID | str,
+    total_competencias: int,
+) -> JobExtracao | None:
+    """Finaliza com sucesso o processamento de um job.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        job_id: Identificador único do job.
+        total_competencias: Quantidade total de competências previdenciárias.
+
+    Returns:
+        Instância de JobExtracao atualizada ou None se inexistente.
+    """
+    job = obter_job_por_id(db, job_id)
+    if not job:
+        return None
+
+    job.status = "completed"
+    job.total_competencias = total_competencias
+    job.caminho_arquivo_temp = None
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def falhar_job(
+    db: Session,
+    job_id: uuid.UUID | str,
+    mensagem_erro: str,
+) -> JobExtracao | None:
+    """Registra falha no processamento de um job e grava a mensagem de erro.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        job_id: Identificador único do job.
+        mensagem_erro: Detalhes do motivo da falha.
+
+    Returns:
+        Instância de JobExtracao atualizada ou None se inexistente.
+    """
+    job = obter_job_por_id(db, job_id)
+    if not job:
+        return None
+
+    job.status = "failed"
+    job.mensagem_erro = mensagem_erro
+    job.caminho_arquivo_temp = None
+    db.commit()
+    db.refresh(job)
+    return job
+
+
+def obter_contribuicoes_por_job(
+    db: Session,
+    job_id: uuid.UUID | str,
+) -> list[Contribuicao]:
+    """Retorna as contribuições previdenciárias associadas a uma execução de job.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        job_id: Identificador único do job.
+
+    Returns:
+        Lista de Contribuicao ordenadas pela data da competência decrescente.
+    """
+    id_uuid = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(str(job_id))
+    stmt = (
+        select(Contribuicao)
+        .where(Contribuicao.job_id == id_uuid)
+        .order_by(Contribuicao.data_competencia.desc())
+    )
+    return list(db.scalars(stmt).all())
