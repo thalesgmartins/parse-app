@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.4.0](https://github.com/thalesgmartins/parse-app/compare/v0.3.0...v0.4.0) (2026-10-08)
+
+
+### Features
+
+* **branding:** adiciona paleta oficial do parseapp, logos vazadas e favicon ([bec215b](https://github.com/thalesgmartins/parse-app/commit/bec215b41c94e2c681e2536f354bc79370d4187b))
+* **database:** adiciona contagem de extratos auditados por advogado ([87f5522](https://github.com/thalesgmartins/parse-app/commit/87f55221506dd2d61ae10f2bfb81beacde47979a))
+* **ui:** redesenha login em split-card e adiciona dropzone no dashboard ([f155239](https://github.com/thalesgmartins/parse-app/commit/f15523957ddc6ef8414c3d25fd1f6bef99b778b1))
+
+
+### Bug Fixes
+
+* **auth:** redireciona erros de login no navegador para exibicao visual ([c2e445e](https://github.com/thalesgmartins/parse-app/commit/c2e445e7c9370f50c339450d72dfab8d8acc74c9))
+
 ## [0.3.0](https://github.com/thalesgmartins/parse-app/compare/v0.2.0...v0.3.0) (2026-10-07)
 
 
