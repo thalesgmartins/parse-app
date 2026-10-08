@@ -1,4 +1,4 @@
-"""Parse CLI Main"""
+"""Ponto de entrada para execução via linha de comando (CLI)."""
 
 import argparse
 import logging
@@ -19,15 +19,30 @@ _LOGGER = logging.getLogger(__name__)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Parser de documentos CNIS")
-    parser.add_argument("--path", "-p", type=str, required=True, help="Caminho para o arquivo PDF")
-    parser.add_argument("--verbose", "-v", action="store_true", help="Caminho para o arquivo PDF")
+    parser.add_argument(
+        "--path",
+        "-p",
+        type=str,
+        required=True,
+        help="Caminho para o arquivo PDF",
+    )
+    parser.add_argument(
+        "--verbose",
+        "-v",
+        action="store_true",
+        help="Ativa logs detalhados em modo DEBUG",
+    )
 
     args = parser.parse_args()
 
     if args.verbose:
-        _LOGGER.setLevel(logging.DEBUG)
+        logging.getLogger("app").setLevel(logging.DEBUG)
 
     dados_extraidos = extrair_dados_pdf(args.path)
 
     for dado in dados_extraidos:
-        _LOGGER.info("Data: %s | Competência: R$ %s", dado.data_competencia, dado.valor)
+        _LOGGER.info(
+            "Data: %s | Competência: R$ %s",
+            dado.data_competencia,
+            dado.valor,
+        )
