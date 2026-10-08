@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Response
+from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
@@ -16,14 +16,32 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 @router.post("/login")
 async def fazer_login(
-    response: Response,
+    request: Request,
     email: Annotated[str, Form()],
     password: Annotated[str, Form()],
     db: Annotated[Session, Depends(get_db)],
 ) -> RedirectResponse:
-    """Valida as credenciais do advogado e define o cookie HTTP-only com token JWT."""
+    """Valida as credenciais do advogado e define o cookie HTTP-only com token JWT.
+
+    Args:
+        request: Objeto da requisição HTTP recebida.
+        email: E-mail de login submetido.
+        password: Senha em texto plano.
+        db: Sessão ativa do banco de dados relacional.
+
+    Returns:
+        Redirecionamento para a dashboard (em sucesso) ou para /login com erro.
+
+    Raises:
+        HTTPException: Se for cliente de API/testes e as credenciais forem inválidas.
+    """
     advogado = obter_advogado_por_email(db, email=email)
     if not advogado or not verify_password(password, advogado.senha_hash):
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse(
+                url="/login?erro=Email+ou+senha+incorretos.",
+                status_code=303,
+            )
         raise HTTPException(status_code=401, detail="Email ou senha incorretos.")
 
     token = create_access_token(data={"sub": str(advogado.id), "email": advogado.email})
@@ -41,14 +59,34 @@ async def fazer_login(
 
 @router.post("/register")
 async def cadastrar_advogado(
+    request: Request,
     nome: Annotated[str, Form()],
     email: Annotated[str, Form()],
     password: Annotated[str, Form()],
     db: Annotated[Session, Depends(get_db)],
 ) -> RedirectResponse:
-    """Cadastra um novo escritório/advogado no sistema."""
+    """Cadastra um novo escritório/advogado no sistema.
+
+    Args:
+        request: Objeto da requisição HTTP recebida.
+        nome: Nome completo do advogado.
+        email: E-mail profissional.
+        password: Senha em texto plano.
+        db: Sessão ativa do banco de dados relacional.
+
+    Returns:
+        Redirecionamento para a dashboard ou de volta para /login em caso de erro.
+
+    Raises:
+        HTTPException: Se for cliente de API e o e-mail já estiver cadastrado.
+    """
     existente = obter_advogado_por_email(db, email=email)
     if existente:
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse(
+                url="/login?erro=E-mail+já+cadastrado+no+sistema.",
+                status_code=303,
+            )
         raise HTTPException(status_code=400, detail="E-mail já cadastrado.")
 
     advogado = criar_advogado(db, nome=nome, email=email, senha=password)
