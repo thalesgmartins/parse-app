@@ -56,16 +56,20 @@ def client_with_user() -> Generator[tuple[TestClient, Advogado], None, None]:
 
 
 def test_assets_estaticos_sao_servidos() -> None:
-    """Garante que os arquivos locais de Tailwind e HTMX são servidos com sucesso."""
+    """Garante que os arquivos locais de Tailwind, HTMX e imagens da marca são servidos."""
     # Arrange & Act
     with TestClient(app) as client:
         res_css = client.get("/static/css/tailwind.min.css")
         res_js = client.get("/static/js/htmx.min.js")
+        res_favicon = client.get("/static/images/favicon.png")
+        res_logo = client.get("/static/images/parse-logo-vazada-branca.png")
 
     # Assert
     assert res_css.status_code == 200
     assert "text/css" in res_css.headers.get("content-type", "")
     assert res_js.status_code == 200
+    assert res_favicon.status_code == 200
+    assert res_logo.status_code == 200
 
 
 def test_dashboard_redireciona_se_deslogado() -> None:
@@ -94,6 +98,7 @@ def test_dashboard_renderiza_com_usuario_autenticado(
     assert advogado.email in response.text
     assert "/auth/logout" in response.text
     assert "hx-indicator" in response.text
+    assert "parse-logo-vazada-branca.png" in response.text
 
 
 def test_extrair_html_rejeita_arquivo_nao_pdf(
@@ -115,3 +120,35 @@ def test_extrair_html_rejeita_arquivo_nao_pdf(
     assert response.status_code == 200
     assert "Falha no Processamento do Documento" in response.text
     assert "Apenas arquivos no formato PDF" in response.text
+
+
+def test_login_erro_via_navegador_redireciona_para_tela_login(
+    client_with_user: tuple[TestClient, Advogado],
+) -> None:
+    """Garante que requisição do navegador com erro no login redireciona para /login?erro=..."""
+    # Arrange
+    client, _ = client_with_user
+
+    # Act
+    response = client.post(
+        "/auth/login",
+        data={"email": "inexistente@adv.com", "password": "senha"},
+        headers={"Accept": "text/html,application/xhtml+xml"},
+        follow_redirects=False,
+    )
+
+    # Assert
+    assert response.status_code == 303
+    assert response.headers.get("location") == "/login?erro=Email+ou+senha+incorretos."
+
+
+def test_tela_login_renderiza_mensagem_de_erro_quando_passada() -> None:
+    """Verifica se a rota /login exibe o banner visual de erro quando presente."""
+    # Arrange & Act
+    with TestClient(app) as client:
+        response = client.get("/login?erro=Credenciais+invalidas")
+
+    # Assert
+    assert response.status_code == 200
+    assert "Credenciais invalidas" in response.text
+    assert "parse-logo-vazada-preta.png" in response.text
