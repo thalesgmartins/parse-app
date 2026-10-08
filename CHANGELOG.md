@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.5.0](https://github.com/thalesgmartins/parse-app/compare/v0.4.0...v0.5.0) (2026-10-08)
+
+
+### Features
+
+* **api:** implement async cnis pdf processing with htmx polling ([393d422](https://github.com/thalesgmartins/parse-app/commit/393d4222527288310d1cdbd2ef5cd36990ece82a))
+* **async-queue:** processamento assincrono de extratos com fila nativa postgresql e volume efemero ([33ea44e](https://github.com/thalesgmartins/parse-app/commit/33ea44e35a00377dc3ecc528f787b553c240acdc))
+* **db:** add JobExtracao model and alembic migration for async queue ([e437d21](https://github.com/thalesgmartins/parse-app/commit/e437d217d93ac3779aa88ddd4aa5d306d9d11fab))
+* **queue:** implement postgres skip locked job repository and worker ([720ecec](https://github.com/thalesgmartins/parse-app/commit/720ecec9534c7f12a0a70ebdc95043cafcc94d6d))
+
 ## [0.4.0](https://github.com/thalesgmartins/parse-app/compare/v0.3.0...v0.4.0) (2026-10-08)
 
 
