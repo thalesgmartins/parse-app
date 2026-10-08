@@ -1,39 +1,63 @@
 {% if erro %}
-<div class="bg-red-50 border border-red-200 text-red-800 p-4 rounded-lg shadow-sm flex items-start gap-3">
-    <svg class="w-5 h-5 text-red-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-    </svg>
+<!-- Estado de Erro -->
+<div class="bg-rose-50 border border-rose-200 text-rose-800 p-5 rounded-2xl shadow-sm flex items-start gap-3.5 animate-fadeIn">
+    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+    </div>
     <div>
-        <h3 class="text-sm font-semibold text-red-800">Falha no Processamento do Documento</h3>
-        <p class="text-xs text-red-700 mt-1 leading-relaxed">{{ erro }}</p>
+        <h3 class="text-sm font-bold text-rose-900">Falha no Processamento do Documento</h3>
+        <p class="text-xs text-rose-700 mt-1 leading-relaxed">{{ erro }}</p>
     </div>
 </div>
 
 {% elif dados and dados|length > 0 %}
-<div class="bg-white border border-slate-200 rounded-lg overflow-hidden shadow-sm">
-    <div class="bg-slate-50 px-6 py-4 border-b border-slate-200 flex justify-between items-center">
-        <div>
-            <h2 class="text-base font-semibold text-slate-800">Resultados da Extração</h2>
-            <p class="text-xs text-slate-500">Dados persistidos com sucesso no banco de dados.</p>
+<!-- Estado de Sucesso com Resumo Financeiro e Tabela -->
+<div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm space-y-0 animate-fadeIn">
+
+    <!-- Topo do Card de Resultados com Métricas da Extração -->
+    <div class="p-6 bg-slate-50/70 border-b border-slate-200/80">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-base font-bold text-slate-900">Extrato Processado com Sucesso</h2>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#eaf4f5] text-[#4e8d91] border border-[#79b5b9]/30">
+                        {{ dados|length }} Competências
+                    </span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">As contribuições foram persistidas e vinculadas ao cadastro do cliente no PostgreSQL.</p>
+            </div>
+
+            <!-- Mini Stat: Intervalo de Competências -->
+            <div class="flex items-center gap-2 text-xs bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs">
+                <span class="text-slate-400 font-medium">Período:</span>
+                <span class="font-mono font-semibold text-slate-700">{{ dados[-1].data_competencia }}</span>
+                <span class="text-slate-300">&rarr;</span>
+                <span class="font-mono font-semibold text-slate-700">{{ dados[0].data_competencia }}</span>
+            </div>
         </div>
-        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
-            {{ dados|length }} competências
-        </span>
     </div>
 
-    <div class="overflow-x-auto max-h-96">
+    <!-- Tabela de Competências e Remunerações -->
+    <div class="overflow-x-auto max-h-[30rem]">
         <table class="w-full text-left text-sm text-slate-600">
-            <thead class="bg-slate-50 text-slate-700 text-xs uppercase font-semibold border-b border-slate-200 sticky top-0">
+            <thead class="bg-slate-50/90 text-slate-600 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200 sticky top-0 backdrop-blur-xs">
                 <tr>
-                    <th class="px-6 py-3">Competência</th>
-                    <th class="px-6 py-3 text-right">Remuneração (R$)</th>
+                    <th class="px-6 py-3.5">#</th>
+                    <th class="px-6 py-3.5">Mês / Ano da Competência</th>
+                    <th class="px-6 py-3.5 text-right">Remuneração Base (R$)</th>
                 </tr>
             </thead>
-            <tbody class="divide-y divide-slate-100">
+            <tbody class="divide-y divide-slate-100 text-xs">
                 {% for item in dados %}
-                <tr class="hover:bg-slate-50 transition-colors">
-                    <td class="px-6 py-3 font-mono text-xs text-slate-700">{{ item.data_competencia }}</td>
-                    <td class="px-6 py-3 text-right font-medium text-slate-900">
+                <tr class="hover:bg-blue-50/20 transition-colors">
+                    <td class="px-6 py-3 text-slate-400 font-mono text-[11px]">{{ loop.index }}</td>
+                    <td class="px-6 py-3 font-mono font-medium text-slate-800 flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
+                        {{ item.data_competencia }}
+                    </td>
+                    <td class="px-6 py-3 text-right font-mono font-semibold text-slate-900">
                         R$ {{ "%.2f"|format(item.valor)|replace('.', ',') }}
                     </td>
                 </tr>
@@ -41,17 +65,29 @@
             </tbody>
         </table>
     </div>
+
+    <!-- Rodapé Informativo da Tabela -->
+    <div class="p-4 bg-slate-50/50 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+        <span>Auditoria: Registro gravado na tabela <code>extractions_logs</code></span>
+        <span class="font-medium text-emerald-700 flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Pronto para Liquidação de Sentença ou RMI
+        </span>
+    </div>
 </div>
 
 {% else %}
-<div class="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-lg shadow-sm flex items-start gap-3">
-    <svg class="w-5 h-5 text-amber-600 mt-0.5 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
+<!-- Estado Vazio -->
+<div class="bg-[#faf6f0] border border-[#e8d5b5] text-amber-900 p-5 rounded-2xl shadow-sm flex items-start gap-3.5 animate-fadeIn">
+    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+    </div>
     <div>
-        <h3 class="text-sm font-semibold text-amber-800">Nenhuma Competência Encontrada</h3>
-        <p class="text-xs text-amber-700 mt-1">
-            O arquivo PDF foi lido, mas não foram localizadas linhas de remuneração no padrão do extrato CNIS. Certifique-se de que o documento não é digitalizado como imagem simples (sem texto pesquisável).
+        <h3 class="text-sm font-bold text-amber-900">Nenhum Registro de Remuneração Encontrado</h3>
+        <p class="text-xs text-amber-800 mt-1 leading-relaxed">
+            O arquivo PDF foi analisado com sucesso, porém não foram localizadas linhas de remuneração no layout do extrato previdenciário CNIS. Verifique se o arquivo enviado não foi gerado a partir de uma digitalização escaneada sem OCR.
         </p>
     </div>
 </div>

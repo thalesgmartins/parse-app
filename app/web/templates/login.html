@@ -3,44 +3,156 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ParseApp - Login</title>
+    <title>ParseApp - Acesso ao Sistema</title>
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    <style>
+        /* Ambient gradient glow for the showcase panel */
+        .ambient-glow {
+            background: radial-gradient(circle at 80% 20%, rgba(121, 181, 185, 0.25) 0%, transparent 60%),
+                        radial-gradient(circle at 20% 80%, rgba(42, 56, 155, 0.4) 0%, transparent 70%);
+        }
+    </style>
 </head>
-<body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
+<body class="bg-[#e5e9eb] flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 font-sans antialiased">
 
-    <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 w-full max-w-md">
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-blue-700 tracking-tight">ParseApp</h1>
-            <p class="text-slate-500 text-sm mt-1">Plataforma de Extração e Análise de CNIS</p>
-        </div>
+    <!-- Card Split-Screen Moderno Inspirado nos Moodboards de SaaS -->
+    <div class="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-slate-200/80 p-3 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch overflow-hidden">
 
-        {% if erro %}
-        <div class="mb-5 p-3 bg-red-50 border border-red-200 rounded-md text-red-700 text-xs flex items-center gap-2">
-            <svg class="w-4 h-4 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-            <span>{{ erro }}</span>
-        </div>
-        {% endif %}
-
-        <form action="/auth/login" method="POST" class="space-y-5">
+        <!-- Coluna Esquerda: Formulário de Login (7 colunas) -->
+        <div class="md:col-span-7 p-6 sm:p-10 flex flex-col justify-between">
             <div>
-                <label for="email" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">E-mail Profissional</label>
-                <input type="email" name="email" id="email" required placeholder="advogado@escritorio.com"
-                       class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+                <!-- Logo & Identificador Superior -->
+                <div class="flex items-center justify-between mb-8">
+                    <img src="/static/images/parse-logo-vazada-preta.png" alt="ParseApp" class="h-9 object-contain">
+                    <span class="text-[11px] font-semibold text-[#2a389b] bg-[#eaf4f5] px-2.5 py-1 rounded-full uppercase tracking-wider">
+                        Acesso Seguro
+                    </span>
+                </div>
+
+                <!-- Cabeçalho do Formulário -->
+                <div class="mb-6">
+                    <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo de volta</h1>
+                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Informe suas credenciais para gerenciar clientes e extratos.</p>
+                </div>
+
+                <!-- Banner de Erro em caso de falha de login -->
+                {% if erro %}
+                <div class="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2.5 animate-fadeIn">
+                    <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span class="font-medium">{{ erro }}</span>
+                </div>
+                {% endif %}
+
+                <!-- Formulário -->
+                <form action="/auth/login" method="POST" class="space-y-4">
+                    <div>
+                        <label for="email" class="block text-xs font-semibold text-slate-700 mb-1.5">E-mail Profissional</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
+                                </svg>
+                            </span>
+                            <input type="email" name="email" id="email" required placeholder="advogado@escritorio.com"
+                                   class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/15 focus:bg-white transition-all">
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label for="password" class="block text-xs font-semibold text-slate-700">Senha de Acesso</label>
+                            <a href="#" class="text-[11px] font-medium text-[#2a389b] hover:underline" tabindex="-1">Esqueceu a senha?</a>
+                        </div>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                            </span>
+                            <input type="password" name="password" id="password" required placeholder="••••••••"
+                                   class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/15 focus:bg-white transition-all">
+                        </div>
+                    </div>
+
+                    <div class="pt-2">
+                        <button type="submit"
+                                class="w-full py-2.5 px-4 bg-[#2a389b] hover:bg-[#1e2978] text-white font-semibold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
+                            <span>Acessar Painel do Escritório</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
             </div>
 
-            <div>
-                <label for="password" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1">Senha de Acesso</label>
-                <input type="password" name="password" id="password" required placeholder="••••••••"
-                       class="block w-full px-3 py-2 bg-white border border-slate-300 rounded-md text-sm placeholder-slate-400 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors">
+            <!-- Rodapé do Formulário -->
+            <div class="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
+                <span>Conforme Art. 11 LGPD</span>
+                <span>Criptografia bcrypt &bull; JWT</span>
+            </div>
+        </div>
+
+        <!-- Coluna Direita: Showcase Visual (5 colunas) Inspirado em info ali sahab & download (1) -->
+        <div class="md:col-span-5 bg-gradient-to-br from-[#2a389b] via-[#222d7c] to-[#161f5b] rounded-2xl p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden shadow-inner">
+            <!-- Camada de Iluminação Ambiente -->
+            <div class="ambient-glow absolute inset-0 pointer-events-none"></div>
+
+            <!-- Topo do Showcase -->
+            <div class="relative z-10">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-[11px] font-semibold text-white/90 border border-white/10 mb-6">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
+                    ParseApp Enterprise
+                </div>
+
+                <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white leading-snug">
+                    Extração inteligente de extratos previdenciários.
+                </h2>
+                <p class="text-xs text-white/70 mt-2 leading-relaxed">
+                    Transforme PDFs do Meu INSS em dados estruturados com tabelas de remunerações prontas para cálculo de RMI.
+                </p>
             </div>
 
-            <button type="submit"
-                    class="w-full flex justify-center py-2.5 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-slate-900 hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-slate-900 transition-colors">
-                Entrar no Sistema
-            </button>
-        </form>
+            <!-- Recursos em Destaque -->
+            <div class="relative z-10 space-y-3.5 my-8">
+                <div class="flex items-start gap-3 text-xs text-white/90">
+                    <div class="w-5 h-5 rounded-md bg-[#79b5b9]/20 text-[#79b5b9] flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <span>Leitura analítica página a página via <strong>pdfplumber</strong></span>
+                </div>
+
+                <div class="flex items-start gap-3 text-xs text-white/90">
+                    <div class="w-5 h-5 rounded-md bg-[#79b5b9]/20 text-[#79b5b9] flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <span>Persistência isolada por advogado em banco PostgreSQL</span>
+                </div>
+
+                <div class="flex items-start gap-3 text-xs text-white/90">
+                    <div class="w-5 h-5 rounded-md bg-[#79b5b9]/20 text-[#79b5b9] flex items-center justify-center shrink-0 mt-0.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                    </div>
+                    <span>Auditoria de conformidade com logs rastreáveis</span>
+                </div>
+            </div>
+
+            <!-- Rodapé do Showcase -->
+            <div class="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
+                <span>Versão 0.2.0</span>
+                <span>PostgreSQL 16 &bull; FastAPI</span>
+            </div>
+        </div>
+
     </div>
 
 </body>
