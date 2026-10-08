@@ -36,6 +36,28 @@ async def lifespan(app: FastAPI):
             alembic_cfg.set_main_option("script_location", str(BASE_DIR / "alembic"))
             command.upgrade(alembic_cfg, "head")
             _LOGGER.info("Migrações concluídas com sucesso!")
+
+            try:
+                from sqlalchemy import update
+
+                from app.database.models import JobExtracao
+                from app.database.session import SessionLocal
+
+                with SessionLocal() as db:
+                    stmt = (
+                        update(JobExtracao)
+                        .where(JobExtracao.status == "processing")
+                        .values(status="pending")
+                    )
+                    resultado = db.execute(stmt)
+                    db.commit()
+                    if resultado.rowcount:
+                        _LOGGER.info(
+                            "Recuperados %d jobs de extração para a fila pendente.",
+                            resultado.rowcount,
+                        )
+            except Exception as exc:
+                _LOGGER.error("Erro ao verificar jobs pendentes na inicialização: %s", exc)
     yield
 
 

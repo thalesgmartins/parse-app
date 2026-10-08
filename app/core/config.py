@@ -18,3 +18,4 @@ DATABASE_URL = os.getenv(
 SECRET_KEY = os.getenv("SECRET_KEY", "parseapp-super-secret-key-change-in-production")
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
+UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/tmp/uploads/parseapp"))

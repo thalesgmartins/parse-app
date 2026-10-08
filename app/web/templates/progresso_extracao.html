@@ -1,0 +1,55 @@
+<div id="job-status-poller"
+     hx-get="/cnis/jobs/{{ job.id }}"
+     hx-trigger="every 1s"
+     hx-target="#resultado-aqui"
+     hx-swap="innerHTML"
+     class="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-sm space-y-5 animate-fadeIn">
+
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-blue-50 text-[#2a389b] flex items-center justify-center shrink-0 shadow-2xs">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-slate-900">
+                    {% if job.status == 'pending' %}
+                        Fila de Processamento: Aguardando Worker
+                    {% else %}
+                        Processando Extrato CNIS em Segundo Plano
+                    {% endif %}
+                </h3>
+                <p class="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
+                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
+                    {{ job.nome_arquivo }}
+                </p>
+            </div>
+        </div>
+
+        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-[#eaf4f5] text-[#4e8d91] border border-[#79b5b9]/30 shrink-0">
+            {% if job.status == 'pending' %}Na Fila (Postgres){% else %}Em Execução{% endif %}
+        </span>
+    </div>
+
+    <!-- Barra de Progresso Animada -->
+    <div class="space-y-2">
+        <div class="flex justify-between text-xs text-slate-500 font-medium">
+            <span>Extração assíncrona (PostgreSQL Queue)</span>
+            <span class="font-mono text-slate-400">Verificando a cada 1s...</span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+            <div class="bg-[#2a389b] h-2.5 rounded-full w-3/4 animate-pulse"></div>
+        </div>
+    </div>
+
+    <div class="p-3.5 bg-slate-50 rounded-xl text-xs text-slate-600 flex items-center gap-2.5">
+        <svg class="w-4 h-4 text-[#2a389b] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <span>
+            O PDF foi persistido no volume efêmero e está sendo processado sem bloquear o servidor. O resultado será exibido automaticamente assim que finalizado.
+        </span>
+    </div>
+</div>
