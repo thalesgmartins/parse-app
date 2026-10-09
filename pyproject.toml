@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "cnis-parse-app"
-version = "0.6.0"
+version = "0.7.0"
 description = "SAAS para extrair dados de documentos CNIS."
 readme = "README.md"
 requires-python = ">=3.10"
