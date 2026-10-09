@@ -152,3 +152,29 @@ def test_tela_login_renderiza_mensagem_de_erro_quando_passada() -> None:
     assert response.status_code == 200
     assert "Credenciais invalidas" in response.text
     assert "parse-logo-vazada-preta.png" in response.text
+
+
+def test_rota_raiz_redireciona_para_login_se_deslogado() -> None:
+    """Verifica que o acesso à rota raiz / sem sessão redireciona para /login."""
+    # Arrange & Act
+    with TestClient(app) as client:
+        response = client.get("/", follow_redirects=False)
+
+    # Assert
+    assert response.status_code == 303
+    assert response.headers.get("location") == "/login"
+
+
+def test_rota_raiz_redireciona_para_dashboard_se_autenticado(
+    client_with_user: tuple[TestClient, Advogado],
+) -> None:
+    """Verifica que o acesso à rota raiz / com sessão redireciona para /dashboard."""
+    # Arrange
+    client, _ = client_with_user
+
+    # Act
+    response = client.get("/", follow_redirects=False)
+
+    # Assert
+    assert response.status_code == 303
+    assert response.headers.get("location") == "/dashboard"
