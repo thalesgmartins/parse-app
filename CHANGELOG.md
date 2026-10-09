@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.8.0](https://github.com/thalesgmartins/parse-app/compare/v0.7.0...v0.8.0) (2026-10-09)
+
+
+### Features
+
+* **docker:** persistir volume de uploads temporarios entre reinicios ([795406a](https://github.com/thalesgmartins/parse-app/commit/795406abe3379e4ba63b7aa7f73c02e52ae6bd86))
+* **security:** implementar rate limiting com slowapi, suporte a cloudflare e limite de upload ([545981a](https://github.com/thalesgmartins/parse-app/commit/545981af5c29f3bc870296511a54d9dd72431ece))
+* **web:** adicionar redirecionamento da rota raiz para dashboard ou login ([54a0132](https://github.com/thalesgmartins/parse-app/commit/54a01324cbbc49d4d6e0b030281786ac69f7c140))
+
 ## [0.7.0](https://github.com/thalesgmartins/parse-app/compare/v0.6.0...v0.7.0) (2026-10-09)
 
 
