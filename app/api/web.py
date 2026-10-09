@@ -20,6 +20,22 @@ router = APIRouter(tags=["Frontend"])
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "web" / "templates")
 
 
+@router.get("/")
+async def rota_raiz(request: Request) -> RedirectResponse:
+    """Redireciona o acesso raiz para o dashboard se autenticado, ou login.
+
+    Args:
+        request: Objeto da requisição HTTP contendo cookies de sessão.
+
+    Returns:
+        RedirectResponse com status 303 direcionando para a rota apropriada.
+    """
+    token = request.cookies.get("access_token")
+    if token:
+        return RedirectResponse(url="/dashboard", status_code=303)
+    return RedirectResponse(url="/login", status_code=303)
+
+
 @router.get("/dashboard")
 async def renderizar_dashboard(
     request: Request,

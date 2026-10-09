@@ -1,6 +1,5 @@
 """Rotas para processamento e extração de extratos CNIS."""
 
-import shutil
 import uuid
 from pathlib import Path
 from typing import Annotated
@@ -20,7 +19,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.api.auth import obter_usuario_logado
-from app.core.config import UPLOAD_DIR
+from app.core.config import MAX_UPLOAD_SIZE_BYTES, UPLOAD_DIR
 from app.database.models import Advogado
 from app.database.repository import (
     criar_cliente,
@@ -36,6 +35,40 @@ from app.services.worker import processar_job_extracao
 
 router = APIRouter(prefix="/cnis", tags=["Processamento CNIS"])
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "web" / "templates")
+
+
+def _salvar_arquivo_temporario_com_limite(
+    arquivo: UploadFile,
+    caminho_destino: Path,
+    limite_bytes: int | None = None,
+) -> None:
+    """Grava o arquivo temporário em disco em blocos respeitando o limite máximo.
+
+    Args:
+        arquivo: Arquivo enviado via formulário multipart.
+        caminho_destino: Caminho onde o arquivo será salvo.
+        limite_bytes: Limite máximo em bytes permitido (opcional).
+
+    Raises:
+        ValueError: Se o tamanho do arquivo exceder o limite permitido.
+    """
+    limite = limite_bytes if limite_bytes is not None else MAX_UPLOAD_SIZE_BYTES
+    total_gravado = 0
+    bloco_tamanho = 64 * 1024  # 64 KB por bloco
+
+    with open(caminho_destino, "wb") as buffer:
+        while True:
+            pedaco = arquivo.file.read(bloco_tamanho)
+            if not pedaco:
+                break
+            total_gravado += len(pedaco)
+            if total_gravado > limite:
+                buffer.close()
+                if caminho_destino.exists():
+                    caminho_destino.unlink()
+                limite_mb = max(1, limite // (1024 * 1024))
+                raise ValueError(f"O arquivo excede o limite máximo permitido de {limite_mb} MB.")
+            buffer.write(pedaco)
 
 
 @router.post("/clientes")
@@ -73,8 +106,12 @@ async def extrair_documento_cnis(
     caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
 
     try:
-        with open(caminho_temp, "wb") as buffer:
-            shutil.copyfileobj(arquivo.file, buffer)
+        _salvar_arquivo_temporario_com_limite(arquivo, caminho_temp)
+    except ValueError as val_err:
+        raise HTTPException(
+            status_code=413,
+            detail=str(val_err),
+        ) from val_err
     except Exception as exc:
         raise HTTPException(
             status_code=500,
@@ -144,8 +181,13 @@ async def extrair_documento_cnis_html(
     caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
 
     try:
-        with open(caminho_temp, "wb") as buffer:
-            shutil.copyfileobj(arquivo.file, buffer)
+        _salvar_arquivo_temporario_com_limite(arquivo, caminho_temp)
+    except ValueError as val_err:
+        return templates.TemplateResponse(
+            request=request,
+            name="tabela_resultados.html",
+            context={"erro": str(val_err)},
+        )
     except Exception as exc:
         return templates.TemplateResponse(
             request=request,

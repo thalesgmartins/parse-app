@@ -6,6 +6,7 @@ from fastapi import APIRouter, Cookie, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from app.core.limiter import limiter
 from app.core.security import create_access_token, decode_access_token, verify_password
 from app.database.models import Advogado
 from app.database.repository import criar_advogado, obter_advogado_por_email, obter_advogado_por_id
@@ -15,6 +16,7 @@ router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
 
 @router.post("/login")
+@limiter.limit("5/minute")
 async def fazer_login(
     request: Request,
     email: Annotated[str, Form()],

@@ -19,3 +19,5 @@ SECRET_KEY = os.getenv("SECRET_KEY", "parseapp-super-secret-key-change-in-produc
 ALGORITHM = os.getenv("ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 UPLOAD_DIR = Path(os.getenv("UPLOAD_DIR", "/tmp/uploads/parseapp"))
+MAX_UPLOAD_SIZE_MB = int(os.getenv("MAX_UPLOAD_SIZE_MB", "20"))
+MAX_UPLOAD_SIZE_BYTES = MAX_UPLOAD_SIZE_MB * 1024 * 1024
