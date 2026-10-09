@@ -125,8 +125,8 @@
         <section class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-6">
             <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
-                    <h2 class="text-base font-bold text-slate-900">Novo Processamento de Extrato CNIS</h2>
-                    <p class="text-xs text-slate-500">Selecione o cliente de destino e envie o documento oficial do Meu INSS.</p>
+                    <h2 class="text-base font-bold text-slate-900">Processamento Inteligente de Extrato CNIS</h2>
+                    <p class="text-xs text-slate-500">Envie o documento oficial do Meu INSS para identificação e consolidação automática.</p>
                 </div>
                 <span class="self-start sm:self-auto text-[11px] font-semibold text-[#4e8d91] bg-[#eaf4f5] px-2.5 py-1 rounded-full">
                     Formato PDF Nativo
@@ -140,22 +140,18 @@
                   hx-disabled-elt="#btn-extrair"
                   class="space-y-6">
 
-                <!-- Seleção do Cliente -->
-                <div>
-                    <label class="block text-xs font-semibold text-slate-700 mb-1.5">Cliente Vinculado</label>
-                    <div class="flex items-center gap-2">
-                        <select name="cliente_id" id="cliente-select" required
-                                class="flex-1 px-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/15 focus:bg-white transition-all">
-                            <option value="">Selecione um cliente para vincular os dados...</option>
-                            {% for cliente in clientes %}
-                                <option value="{{ cliente.id }}">{{ cliente.nome }}{% if cliente.cpf %} (CPF: {{ cliente.cpf }}){% endif %}</option>
-                            {% endfor %}
-                        </select>
-                        <button type="button" onclick="document.getElementById('modal-cliente').showModal()"
-                                title="Cadastrar cliente rápido"
-                                class="px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer shrink-0">
-                            + Novo
-                        </button>
+                <!-- Reconhecimento Automático do Segurado -->
+                <div class="flex items-center gap-3 p-3.5 bg-blue-50/70 rounded-2xl border border-blue-100 text-xs text-slate-700">
+                    <div class="w-8 h-8 rounded-xl bg-[#2a389b]/10 text-[#2a389b] flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="font-semibold text-slate-900 block">Identificação Automática do Cliente</span>
+                        <p class="text-slate-500 text-[11px] mt-0.5">
+                            O sistema detecta automaticamente o Nome e CPF no cabeçalho do CNIS, criando o cliente ou unificando suas contribuições acumuladas.
+                        </p>
                     </div>
                 </div>
 
@@ -218,6 +214,77 @@
 
         <!-- Container de Resultados (Injeção via HTMX) -->
         <div id="resultado-aqui" class="transition-all"></div>
+
+        <!-- Clientes e Histórico Consolidado -->
+        <section class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">
+            <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Clientes e Histórico Consolidado</h2>
+                    <p class="text-xs text-slate-500">Visualização e exportação unificada de todas as contribuições previdenciárias de cada cliente.</p>
+                </div>
+                <span class="self-start sm:self-auto text-xs font-semibold text-[#4e8d91] bg-[#eaf4f5] px-3 py-1 rounded-full border border-[#79b5b9]/30">
+                    {{ clientes|length }} Clientes
+                </span>
+            </div>
+
+            {% if clientes and clientes|length > 0 %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-3">Segurado</th>
+                            <th class="px-4 py-3">CPF</th>
+                            <th class="px-4 py-3 text-center">Competências Consolidadas</th>
+                            <th class="px-4 py-3 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% for c in clientes %}
+                        <tr class="hover:bg-slate-50/60 transition-colors">
+                            <td class="px-4 py-3 font-semibold text-slate-900 flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-full bg-blue-50 text-[#2a389b] text-[11px] font-bold flex items-center justify-center shrink-0 border border-blue-100">
+                                    {{ c.nome[0]|upper }}
+                                </div>
+                                <span class="truncate max-w-xs">{{ c.nome }}</span>
+                            </td>
+                            <td class="px-4 py-3 font-mono text-[11px] text-slate-600">
+                                {{ c.cpf if c.cpf else '-' }}
+                            </td>
+                            <td class="px-4 py-3 font-mono font-bold text-slate-800 text-center">
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#eaf4f5] text-[#4e8d91] border border-[#79b5b9]/30">
+                                    {{ c.contribuicoes|length }}
+                                </span>
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                <div class="inline-flex items-center gap-1.5 justify-end">
+                                    <button type="button"
+                                            hx-get="/cnis/clientes/{{ c.id }}/tabela"
+                                            hx-target="#resultado-aqui"
+                                            hx-swap="innerHTML"
+                                            onclick="document.getElementById('resultado-aqui').scrollIntoView({behavior: 'smooth'})"
+                                            title="Visualizar todas as contribuições consolidadas deste cliente"
+                                            class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-all cursor-pointer">
+                                        Visualizar
+                                    </button>
+                                    <a href="/cnis/clientes/{{ c.id }}/csv"
+                                       download
+                                       title="Baixar todas as contribuições consolidadas em CSV"
+                                       class="px-2.5 py-1 bg-[#2a389b] hover:bg-[#1e2978] text-white text-xs font-semibold rounded-lg shadow-2xs transition-all cursor-pointer">
+                                        CSV
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-6 text-slate-400 text-xs">
+                Nenhum cliente cadastrado até o momento. Envie seu primeiro extrato CNIS para identificação automática.
+            </div>
+            {% endif %}
+        </section>
 
         <!-- Histórico de Extrações Realizadas -->
         <section class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">

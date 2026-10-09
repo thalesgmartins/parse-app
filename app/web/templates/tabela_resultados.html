@@ -23,10 +23,10 @@
                 <div class="flex items-center gap-2">
                     <h2 class="text-base font-bold text-slate-900">Extrato Processado com Sucesso</h2>
                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#eaf4f5] text-[#4e8d91] border border-[#79b5b9]/30">
-                        {{ dados|length }} Competências
+                        {{ dados|length }} Competências Consolidadas
                     </span>
                 </div>
-                <p class="text-xs text-slate-500 mt-0.5">As contribuições foram persistidas e vinculadas ao cadastro no PostgreSQL.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Contribuições identificadas e unificadas automaticamente no cadastro do cliente.</p>
             </div>
 
             <!-- Mini Stat: Intervalo de Competências -->
@@ -41,14 +41,18 @@
         <!-- Barra de Ações: Copiar e Exportar -->
         <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/60">
             <div class="flex items-center gap-2 text-xs text-slate-600">
-                {% if job and job.nome_arquivo %}
-                <span class="font-mono text-[11px] bg-slate-100 px-2 py-0.5 rounded-md border border-slate-200 truncate max-w-[200px]" title="{{ job.nome_arquivo }}">
-                    {{ job.nome_arquivo }}
+                {% if cliente or (job and job.cliente) %}
+                {% set segurado = cliente or job.cliente %}
+                <span class="text-[11px] font-semibold text-[#2a389b] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 flex items-center gap-1.5">
+                    <svg class="w-3.5 h-3.5 text-[#2a389b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    Segurado: {{ segurado.nome }}{% if segurado.cpf %} &bull; CPF: {{ segurado.cpf }}{% endif %}
                 </span>
                 {% endif %}
-                {% if job and job.cliente %}
-                <span class="text-[11px] font-semibold text-[#2a389b] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-100">
-                    Cliente: {{ job.cliente.nome }}
+                {% if job and job.nome_arquivo %}
+                <span class="font-mono text-[11px] bg-slate-100 text-slate-500 px-2 py-1 rounded-md border border-slate-200 truncate max-w-[200px]" title="{{ job.nome_arquivo }}">
+                    {{ job.nome_arquivo }}
                 </span>
                 {% endif %}
             </div>
@@ -56,7 +60,7 @@
             <div class="flex items-center gap-2">
                 <button type="button"
                         onclick="copiarTabelaCompetencias(this)"
-                        title="Copiar dados para colar em planilhas ou documentos"
+                        title="Copiar todas as competências para colar no Excel ou documentos"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer">
                     <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
@@ -64,7 +68,17 @@
                     <span>Copiar Dados</span>
                 </button>
 
-                {% if job and job.id %}
+                {% if cliente %}
+                <a href="/cnis/clientes/{{ cliente.id }}/csv"
+                   download
+                   title="Exportar todas as contribuições consolidadas do cliente"
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2a389b] hover:bg-[#1e2978] text-white text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                    </svg>
+                    <span>Exportar CSV</span>
+                </a>
+                {% elif job and job.id %}
                 <a href="/cnis/jobs/{{ job.id }}/csv"
                    download
                    title="Exportar arquivo CSV formatado para Excel"

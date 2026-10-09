@@ -18,6 +18,7 @@ from app.database.repository import (
     criar_cliente,
     criar_job_extracao,
     falhar_job,
+    obter_cliente_por_id,
     obter_contribuicoes_por_job,
     obter_job_por_id,
     obter_proximo_job,
@@ -236,3 +237,53 @@ def test_processar_proximo_job_pendente_fila(db_session: Session, tmp_path: Path
     # Segunda chamada não encontra nenhum job pendente
     consumido_novamente = processar_proximo_job_pendente(db=db_session)
     assert consumido_novamente is False
+
+
+def test_processar_job_extracao_identificacao_automatica_cliente(
+    db_session: Session, tmp_path: Path
+) -> None:
+    """Verifica que o worker detecta o segurado e cria/vincula o cliente automaticamente."""
+    # Arrange
+    advogado = criar_advogado(
+        db_session, nome="Dr. Previdência", email="prev@adv.com", senha="senha"
+    )
+    arquivo_temp = tmp_path / "extrato_sem_cliente_predefinido.pdf"
+    arquivo_temp.write_bytes(b"%PDF-1.4 fake")
+
+    job_id = uuid.uuid4()
+    criar_job_extracao(
+        db=db_session,
+        job_id=job_id,
+        advogado_id=advogado.id,
+        cliente_id=None,  # Nenhum cliente informado previamente
+        nome_arquivo="extrato_sem_cliente_predefinido.pdf",
+        caminho_arquivo_temp=str(arquivo_temp),
+    )
+
+    competencias = [
+        CnisCompetencia(data_competencia="01/2024", valor=1412.0),
+        CnisCompetencia(data_competencia="02/2024", valor=1412.0),
+    ]
+
+    # Act
+    with (
+        patch(
+            "app.services.worker.extrair_metadados_pdf",
+            return_value=("Segurado Identificado Automaticamente", "999.888.777-66"),
+        ),
+        patch("app.services.worker.extrair_dados_pdf", return_value=competencias),
+    ):
+        sucesso = processar_job_extracao(job_id=job_id, db=db_session)
+
+    # Assert
+    assert sucesso is True
+    job_atualizado = obter_job_por_id(db_session, job_id)
+    assert job_atualizado is not None
+    assert job_atualizado.status == "completed"
+    assert job_atualizado.cliente_id is not None
+
+    cliente_criado = obter_cliente_por_id(db_session, job_atualizado.cliente_id)
+    assert cliente_criado is not None
+    assert cliente_criado.nome == "Segurado Identificado Automaticamente"
+    assert cliente_criado.cpf == "999.888.777-66"
+    assert len(cliente_criado.contribuicoes) == 2
