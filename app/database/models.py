@@ -3,7 +3,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import Float, ForeignKey, String, func
+from sqlalchemy import Float, ForeignKey, String, UniqueConstraint, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
@@ -75,6 +75,13 @@ class Contribuicao(Base):
     """Entidade que representa uma competência extraída do extrato CNIS."""
 
     __tablename__ = "contribuicoes"
+    __table_args__ = (
+        UniqueConstraint(
+            "cliente_id",
+            "data_competencia",
+            name="uq_contribuicoes_cliente_competencia",
+        ),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     cliente_id: Mapped[uuid.UUID | None] = mapped_column(
