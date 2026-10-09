@@ -110,11 +110,11 @@ async def extrair_documento_cnis(
 @router.post("/extrair-html")
 async def extrair_documento_cnis_html(
     request: Request,
-    cliente_id: Annotated[str, Form()],
     arquivo: Annotated[UploadFile, File()],
     usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
     db: Annotated[Session, Depends(get_db)],
     background_tasks: BackgroundTasks,
+    cliente_id: Annotated[str | None, Form()] = None,
 ):
     """Enfileira o extrato CNIS e devolve o fragmento de polling HTMX imediato.
 
@@ -221,11 +221,16 @@ async def obter_job_extracao_view(
         )
 
     if job.status == "completed":
-        contribuicoes = obter_contribuicoes_por_job(db, job.id)
+        cliente = obter_cliente_por_id(db, job.cliente_id) if job.cliente_id else None
+        if cliente:
+            contribuicoes = obter_contribuicoes_por_cliente(db, cliente.id)
+        else:
+            contribuicoes = obter_contribuicoes_por_job(db, job.id)
+
         return templates.TemplateResponse(
             request=request,
             name="tabela_resultados.html",
-            context={"dados": contribuicoes, "job": job},
+            context={"dados": contribuicoes, "job": job, "cliente": cliente},
         )
 
     return templates.TemplateResponse(
@@ -299,7 +304,10 @@ async def exportar_job_csv(
             detail="O processamento do extrato ainda não foi concluído.",
         )
 
-    contribuicoes = obter_contribuicoes_por_job(db, job.id)
+    if job.cliente_id:
+        contribuicoes = obter_contribuicoes_por_cliente(db, job.cliente_id)
+    else:
+        contribuicoes = obter_contribuicoes_por_job(db, job.id)
     conteudo_csv = gerar_csv_contribuicoes(contribuicoes)
     nome_base = Path(job.nome_arquivo).stem or "extrato"
     nome_arquivo_csv = f"{nome_base}_contribuicoes.csv"
@@ -347,4 +355,37 @@ async def exportar_cliente_csv(
         headers={
             "Content-Disposition": f'attachment; filename="{nome_arquivo_csv}"',
         },
+    )
+
+
+@router.get("/clientes/{cliente_id}/tabela")
+async def obter_tabela_cliente_view(
+    request: Request,
+    cliente_id: uuid.UUID,
+    usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
+    db: Annotated[Session, Depends(get_db)],
+):
+    """Renderiza a tabela de contribuições consolidadas de um cliente via HTMX.
+
+    Args:
+        request: Objeto da requisição HTTP.
+        cliente_id: Identificador único do cliente.
+        usuario: Advogado autenticado.
+        db: Sessão ativa do banco de dados.
+
+    Returns:
+        TemplateResponse renderizando tabela_resultados.html.
+
+    Raises:
+        HTTPException: Se o cliente não existir ou pertencer a outro advogado.
+    """
+    cliente = obter_cliente_por_id(db, cliente_id)
+    if not cliente or cliente.advogado_id != usuario.id:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado.")
+
+    contribuicoes = obter_contribuicoes_por_cliente(db, cliente.id)
+    return templates.TemplateResponse(
+        request=request,
+        name="tabela_resultados.html",
+        context={"dados": contribuicoes, "cliente": cliente},
     )
