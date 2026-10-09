@@ -14,6 +14,10 @@ services:
     # Monta o codigo local para hot-reload sem precisar rebuildar a imagem:
     volumes:
       - ./app:/app/app
+      - parse_uploads:/tmp/uploads/parseapp
     # Ativa o reload automatico do Uvicorn para desenvolvimento local:
     command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
     restart: "no"
+
+volumes:
+  parse_uploads:

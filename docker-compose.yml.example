@@ -12,6 +12,8 @@ services:
     ports:
       - "8000:8000"
     env_file: ".env"
+    volumes:
+      - parse_uploads:/tmp/uploads/parseapp
     depends_on:
       postgres:
         condition: service_healthy
@@ -37,3 +39,4 @@ services:
 
 volumes:
   postgres_data:
+  parse_uploads:
