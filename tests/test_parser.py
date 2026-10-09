@@ -1,6 +1,10 @@
 """Testes unitários para o motor de parsing de extratos CNIS."""
 
-from app.core.parser import processar_linhas_cnis
+from app.core.parser import (
+    extrair_dados_segurado,
+    extrair_metadados_pdf,
+    processar_linhas_cnis,
+)
 
 
 def test_processar_linhas_tres_competencias_na_mesma_linha() -> None:
@@ -135,3 +139,58 @@ def test_processar_linhas_ordenacao_cronologica_estrita() -> None:
         "11/2025",
         "12/2025",
     ]
+
+
+def test_extrair_dados_segurado_cabecalho_cnis_completo() -> None:
+    """Valida a identificação de Nome e CPF a partir de cabeçalho padrão CNIS."""
+    # Arrange
+    texto = (
+        "INSTITUTO NACIONAL DO SEGURO SOCIAL - INSS\n"
+        "EXTRATO DE INFORMACOES DA PREVIDENCIA SOCIAL\n"
+        "NIT: 123.45678.90-1 CPF: 034.544.150-80 Nome: "
+        "THALES GABRIEL FERNANDES DINIZ MARTINS\n"
+        "Data de nascimento: 15/04/1990 Nome da mãe: MARIA SILVA\n"
+    )
+
+    # Act
+    nome, cpf = extrair_dados_segurado(texto)
+
+    # Assert
+    assert nome == "THALES GABRIEL FERNANDES DINIZ MARTINS"
+    assert cpf == "034.544.150-80"
+
+
+def test_extrair_dados_segurado_cpf_sem_pontuacao() -> None:
+    """Verifica a normalização de CPF sem pontos ou traço."""
+    # Arrange
+    texto = "CPF: 12345678901 Nome: MARIA PEREIRA SANTOS Data de nascimento: 01/01/1980"
+
+    # Act
+    nome, cpf = extrair_dados_segurado(texto)
+
+    # Assert
+    assert nome == "MARIA PEREIRA SANTOS"
+    assert cpf == "123.456.789-01"
+
+
+def test_extrair_dados_segurado_texto_sem_dados() -> None:
+    """Verifica retorno nulo quando o texto não contém metadados de identificação."""
+    # Arrange
+    texto = "Texto aleatório sem menção a segurado ou cadastro previdenciário."
+
+    # Act
+    nome, cpf = extrair_dados_segurado(texto)
+
+    # Assert
+    assert nome is None
+    assert cpf is None
+
+
+def test_extrair_metadados_pdf_arquivo_inexistente() -> None:
+    """Garante tratamento resiliente ao inspecionar arquivo que não existe."""
+    # Act
+    nome, cpf = extrair_metadados_pdf("/caminho/falso/nao_existe.pdf")
+
+    # Assert
+    assert nome is None
+    assert cpf is None

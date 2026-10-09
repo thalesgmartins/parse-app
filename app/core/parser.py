@@ -99,3 +99,66 @@ def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
                 todas_as_linhas.extend(texto.split("\n"))
 
     return processar_linhas_cnis(todas_as_linhas)
+
+
+def extrair_dados_segurado(texto: str) -> tuple[str | None, str | None]:
+    """Extrai nome e CPF do segurado a partir do texto do extrato CNIS.
+
+    Args:
+        texto: Conteúdo textual das páginas iniciais do documento CNIS.
+
+    Returns:
+        Tupla (nome, cpf) caso identificados no padrão oficial do INSS.
+    """
+    cpf: str | None = None
+    nome: str | None = None
+
+    m_cpf = re.search(
+        r"(?:CPF|C\.P\.F\.)(?:\s*do\s*Filiado)?[:\s]+(\d{3}\.\d{3}\.\d{3}-\d{2}|\d{11})",
+        texto,
+        re.IGNORECASE,
+    )
+    if m_cpf:
+        cpf_bruto = m_cpf.group(1).strip()
+        if len(cpf_bruto) == 11 and "." not in cpf_bruto:
+            cpf = f"{cpf_bruto[:3]}.{cpf_bruto[3:6]}.{cpf_bruto[6:9]}-{cpf_bruto[9:]}"
+        else:
+            cpf = cpf_bruto
+
+    m_nome = re.search(
+        r"(?:Nome|Nome\s*do\s*Filiado|Nome\s*do\s*Trabalhador)[:\s]+"
+        r"([A-Za-zÀ-ÖØ-öø-ÿ\s\.\'\-]+?)"
+        r"(?=\s+(?:Data de nascimento|Nome da mãe|NIT|CPF|Data|Seq\.)|\n|\r|$)",
+        texto,
+        re.IGNORECASE,
+    )
+    if m_nome:
+        candidato = m_nome.group(1).strip()
+        if len(candidato) >= 3 and not re.match(r"^\d+$", candidato):
+            nome = candidato
+
+    return nome, cpf
+
+
+def extrair_metadados_pdf(caminho_arquivo: Path | str) -> tuple[str | None, str | None]:
+    """Extrai nome e CPF do segurado inspecionando o cabeçalho do PDF.
+
+    Args:
+        caminho_arquivo: Caminho do arquivo PDF do extrato CNIS a ser lido.
+
+    Returns:
+        Tupla contendo (nome, cpf) do segurado identificado.
+    """
+    caminho = Path(caminho_arquivo)
+    try:
+        with pdfplumber.open(caminho) as pdf:
+            texto_inicial = ""
+            for pagina in pdf.pages[:2]:
+                texto_pag = pagina.extract_text()
+                if texto_pag:
+                    texto_inicial += "\n" + texto_pag
+
+        return extrair_dados_segurado(texto_inicial)
+    except Exception as exc:
+        _LOGGER.debug("Não foi possível extrair metadados do PDF %s: %s", caminho, exc)
+        return None, None
