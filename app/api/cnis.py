@@ -15,7 +15,7 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -25,10 +25,13 @@ from app.database.models import Advogado
 from app.database.repository import (
     criar_cliente,
     criar_job_extracao,
+    obter_cliente_por_id,
+    obter_contribuicoes_por_cliente,
     obter_contribuicoes_por_job,
     obter_job_por_id,
 )
 from app.database.session import get_db
+from app.services.export import gerar_csv_contribuicoes
 from app.services.worker import processar_job_extracao
 
 router = APIRouter(prefix="/cnis", tags=["Processamento CNIS"])
@@ -222,7 +225,7 @@ async def obter_job_extracao_view(
         return templates.TemplateResponse(
             request=request,
             name="tabela_resultados.html",
-            context={"dados": contribuicoes},
+            context={"dados": contribuicoes, "job": job},
         )
 
     return templates.TemplateResponse(
@@ -264,3 +267,84 @@ async def obter_job_status_json(
         "created_at": job.created_at.isoformat() if job.created_at else None,
         "updated_at": job.updated_at.isoformat() if job.updated_at else None,
     }
+
+
+@router.get("/jobs/{job_id}/csv")
+async def exportar_job_csv(
+    job_id: uuid.UUID,
+    usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    """Exporta as contribuições de um job concluído em formato CSV (PT-BR).
+
+    Args:
+        job_id: Identificador único do job de extração.
+        usuario: Advogado autenticado.
+        db: Sessão ativa do banco de dados.
+
+    Returns:
+        Response contendo arquivo CSV com cabeçalho attachment.
+
+    Raises:
+        HTTPException: Se o job não for encontrado, pertencer a outro advogado ou
+            não estiver concluído.
+    """
+    job = obter_job_por_id(db, job_id)
+    if not job or job.advogado_id != usuario.id:
+        raise HTTPException(status_code=404, detail="Job de extração não encontrado.")
+
+    if job.status != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail="O processamento do extrato ainda não foi concluído.",
+        )
+
+    contribuicoes = obter_contribuicoes_por_job(db, job.id)
+    conteudo_csv = gerar_csv_contribuicoes(contribuicoes)
+    nome_base = Path(job.nome_arquivo).stem or "extrato"
+    nome_arquivo_csv = f"{nome_base}_contribuicoes.csv"
+
+    return Response(
+        content=conteudo_csv,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{nome_arquivo_csv}"',
+        },
+    )
+
+
+@router.get("/clientes/{cliente_id}/csv")
+async def exportar_cliente_csv(
+    cliente_id: uuid.UUID,
+    usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
+    db: Annotated[Session, Depends(get_db)],
+) -> Response:
+    """Exporta todas as contribuições previdenciárias de um cliente em formato CSV.
+
+    Args:
+        cliente_id: Identificador único do cliente.
+        usuario: Advogado autenticado.
+        db: Sessão ativa do banco de dados.
+
+    Returns:
+        Response contendo arquivo CSV com cabeçalho attachment.
+
+    Raises:
+        HTTPException: Se o cliente não existir ou pertencer a outro advogado.
+    """
+    cliente = obter_cliente_por_id(db, cliente_id)
+    if not cliente or cliente.advogado_id != usuario.id:
+        raise HTTPException(status_code=404, detail="Cliente não encontrado.")
+
+    contribuicoes = obter_contribuicoes_por_cliente(db, cliente.id)
+    conteudo_csv = gerar_csv_contribuicoes(contribuicoes)
+    nome_sanitizado = cliente.nome.strip().replace(" ", "_").lower()
+    nome_arquivo_csv = f"cnis_{nome_sanitizado}.csv"
+
+    return Response(
+        content=conteudo_csv,
+        media_type="text/csv; charset=utf-8",
+        headers={
+            "Content-Disposition": f'attachment; filename="{nome_arquivo_csv}"',
+        },
+    )
