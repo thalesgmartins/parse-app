@@ -219,6 +219,105 @@
         <!-- Container de Resultados (Injeção via HTMX) -->
         <div id="resultado-aqui" class="transition-all"></div>
 
+        <!-- Histórico de Extrações Realizadas -->
+        <section class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-sm space-y-5">
+            <div class="border-b border-slate-100 pb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-base font-bold text-slate-900">Extratos Processados Anteriormente</h2>
+                    <p class="text-xs text-slate-500">Histórico de arquivos processados com acesso instantâneo a visualização e exportação.</p>
+                </div>
+                <span class="self-start sm:self-auto text-xs font-semibold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                    {{ jobs|length if jobs else 0 }} Registros
+                </span>
+            </div>
+
+            {% if jobs and jobs|length > 0 %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-600">
+                    <thead class="bg-slate-50 text-slate-500 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200">
+                        <tr>
+                            <th class="px-4 py-3">Arquivo</th>
+                            <th class="px-4 py-3">Cliente</th>
+                            <th class="px-4 py-3">Data/Hora</th>
+                            <th class="px-4 py-3 text-center">Competências</th>
+                            <th class="px-4 py-3">Status</th>
+                            <th class="px-4 py-3 text-right">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-xs">
+                        {% for j in jobs %}
+                        <tr class="hover:bg-slate-50/60 transition-colors">
+                            <td class="px-4 py-3 font-medium text-slate-900">
+                                <div class="flex items-center gap-2">
+                                    <svg class="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                    </svg>
+                                    <span class="font-mono text-xs truncate max-w-[200px]" title="{{ j.nome_arquivo }}">{{ j.nome_arquivo }}</span>
+                                </div>
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if j.cliente %}
+                                    <span class="font-medium text-slate-800">{{ j.cliente.nome }}</span>
+                                {% else %}
+                                    <span class="text-slate-400 italic">Não vinculado</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-slate-500 font-mono text-[11px]">
+                                {{ j.created_at.strftime('%d/%m/%Y %H:%M') if j.created_at else '-' }}
+                            </td>
+                            <td class="px-4 py-3 font-mono font-semibold text-slate-700 text-center">
+                                {{ j.total_competencias }}
+                            </td>
+                            <td class="px-4 py-3">
+                                {% if j.status == 'completed' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                        Concluído
+                                    </span>
+                                {% elif j.status == 'failed' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-rose-50 text-rose-700 border border-rose-200" title="{{ j.mensagem_erro or '' }}">
+                                        Falha
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                        {{ j.status }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right">
+                                {% if j.status == 'completed' %}
+                                <div class="inline-flex items-center gap-1.5 justify-end">
+                                    <button type="button"
+                                            hx-get="/cnis/jobs/{{ j.id }}"
+                                            hx-target="#resultado-aqui"
+                                            hx-swap="innerHTML"
+                                            onclick="document.getElementById('resultado-aqui').scrollIntoView({behavior: 'smooth'})"
+                                            title="Visualizar tabela de competências"
+                                            class="px-2.5 py-1 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg shadow-2xs transition-all cursor-pointer">
+                                        Visualizar
+                                    </button>
+                                    <a href="/cnis/jobs/{{ j.id }}/csv"
+                                       download
+                                       title="Baixar em formato CSV para Excel"
+                                       class="px-2.5 py-1 bg-[#2a389b] hover:bg-[#1e2978] text-white text-xs font-semibold rounded-lg shadow-2xs transition-all cursor-pointer">
+                                        CSV
+                                    </a>
+                                </div>
+                                {% else %}
+                                <span class="text-slate-400 text-xs">-</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="text-center py-8 text-slate-400 text-xs">
+                Nenhum extrato processado até o momento. Utilize a área acima para enviar seu primeiro arquivo PDF.
+            </div>
+            {% endif %}
+        </section>
+
     </main>
 
     <!-- Rodapé Discreto -->
@@ -284,6 +383,84 @@
                 dropContent.classList.remove('hidden');
                 fileSelected.classList.add('hidden');
             }
+        }
+
+        function copiarTabelaCompetencias(buttonEl) {
+            const linhas = [];
+            linhas.push("Competência\tRemuneração (R$)");
+            const tbody = document.getElementById("tabela-competencias-corpo");
+            if (!tbody) return;
+
+            tbody.querySelectorAll("tr").forEach(tr => {
+                const cols = tr.querySelectorAll("td");
+                if (cols.length >= 3) {
+                    const comp = cols[1].innerText.trim();
+                    const val = cols[2].innerText.replace("R$", "").trim();
+                    linhas.push(`${comp}\t${val}`);
+                }
+            });
+
+            const texto = linhas.join("\n");
+            const feedbackTexto = () => {
+                const span = buttonEl.querySelector("span");
+                if (span) {
+                    const original = span.textContent;
+                    span.textContent = "Copiado!";
+                    buttonEl.classList.add("bg-emerald-50", "text-emerald-700", "border-emerald-300");
+                    setTimeout(() => {
+                        span.textContent = original;
+                        buttonEl.classList.remove("bg-emerald-50", "text-emerald-700", "border-emerald-300");
+                    }, 2000);
+                }
+            };
+
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(texto).then(feedbackTexto).catch(() => {
+                    copiarFallback(texto, feedbackTexto);
+                });
+            } else {
+                copiarFallback(texto, feedbackTexto);
+            }
+        }
+
+        function copiarFallback(texto, callback) {
+            const ta = document.createElement("textarea");
+            ta.value = texto;
+            ta.style.position = "fixed";
+            ta.style.opacity = "0";
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            try {
+                document.execCommand("copy");
+                if (callback) callback();
+            } catch (e) {
+                console.error("Falha ao copiar:", e);
+            }
+            document.body.removeChild(ta);
+        }
+
+        function exportarCsvDoDom() {
+            const tbody = document.getElementById("tabela-competencias-corpo");
+            if (!tbody) return;
+
+            const linhas = ["\ufeffCompetência;Remuneração (R$)"];
+            tbody.querySelectorAll("tr").forEach(tr => {
+                const cols = tr.querySelectorAll("td");
+                if (cols.length >= 3) {
+                    const comp = cols[1].innerText.trim();
+                    const val = cols[2].innerText.replace("R$", "").trim();
+                    linhas.push(`${comp};${val}`);
+                }
+            });
+
+            const blob = new Blob([linhas.join("\r\n")], { type: "text/csv;charset=utf-8;" });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = "extrato_cnis.csv";
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
     </script>
 </body>

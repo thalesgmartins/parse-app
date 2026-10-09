@@ -9,7 +9,11 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.api.auth import obter_usuario_logado
-from app.database.repository import contar_extracos, listar_clientes
+from app.database.repository import (
+    contar_extracos,
+    listar_clientes,
+    listar_jobs_por_advogado,
+)
 from app.database.session import get_db
 
 router = APIRouter(tags=["Frontend"])
@@ -38,6 +42,7 @@ async def renderizar_dashboard(
         usuario = await obter_usuario_logado(access_token=token, db=db)
         clientes_do_advogado = listar_clientes(db=db, advogado_id=usuario.id)
         total_extracos = contar_extracos(db=db, advogado_id=usuario.id)
+        jobs_do_advogado = listar_jobs_por_advogado(db=db, advogado_id=usuario.id)
 
         return templates.TemplateResponse(
             request=request,
@@ -47,6 +52,7 @@ async def renderizar_dashboard(
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
                 "total_extracos": total_extracos,
+                "jobs": jobs_do_advogado,
             },
         )
     except HTTPException:

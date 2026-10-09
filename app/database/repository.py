@@ -3,7 +3,7 @@
 import uuid
 
 from sqlalchemy import func, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.schemas import CnisCompetencia
 from app.core.security import hash_password
@@ -115,6 +115,24 @@ def listar_clientes(
     id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
     stmt = select(Cliente).where(Cliente.advogado_id == id_uuid).order_by(Cliente.nome)
     return list(db.scalars(stmt).all())
+
+
+def obter_cliente_por_id(
+    db: Session,
+    cliente_id: uuid.UUID | str,
+) -> Cliente | None:
+    """Busca um cliente pelo identificador único.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        cliente_id: Identificador único do cliente.
+
+    Returns:
+        Instância de Cliente ou None se não encontrado.
+    """
+    id_uuid = cliente_id if isinstance(cliente_id, uuid.UUID) else uuid.UUID(str(cliente_id))
+    stmt = select(Cliente).where(Cliente.id == id_uuid)
+    return db.scalar(stmt)
 
 
 def salvar_contribuicoes(
@@ -390,6 +408,56 @@ def obter_contribuicoes_por_job(
     stmt = (
         select(Contribuicao)
         .where(Contribuicao.job_id == id_uuid)
+        .order_by(ano_col.asc(), mes_col.asc())
+    )
+    return list(db.scalars(stmt).all())
+
+
+def listar_jobs_por_advogado(
+    db: Session,
+    advogado_id: uuid.UUID | str,
+    limit: int = 50,
+) -> list[JobExtracao]:
+    """Lista os trabalhos de extração pertencentes a um advogado.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        advogado_id: Identificador do advogado proprietário.
+        limit: Quantidade máxima de registros retornados.
+
+    Returns:
+        Lista de JobExtracao ordenados pela data de criação decrescente.
+    """
+    id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
+    stmt = (
+        select(JobExtracao)
+        .options(joinedload(JobExtracao.cliente))
+        .where(JobExtracao.advogado_id == id_uuid)
+        .order_by(JobExtracao.created_at.desc())
+        .limit(limit)
+    )
+    return list(db.scalars(stmt).all())
+
+
+def obter_contribuicoes_por_cliente(
+    db: Session,
+    cliente_id: uuid.UUID | str,
+) -> list[Contribuicao]:
+    """Retorna todas as contribuições previdenciárias de um cliente específico.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        cliente_id: Identificador único do cliente.
+
+    Returns:
+        Lista de Contribuicao ordenadas cronologicamente de forma ascendente.
+    """
+    id_uuid = cliente_id if isinstance(cliente_id, uuid.UUID) else uuid.UUID(str(cliente_id))
+    ano_col = func.substr(Contribuicao.data_competencia, 4, 4)
+    mes_col = func.substr(Contribuicao.data_competencia, 1, 2)
+    stmt = (
+        select(Contribuicao)
+        .where(Contribuicao.cliente_id == id_uuid)
         .order_by(ano_col.asc(), mes_col.asc())
     )
     return list(db.scalars(stmt).all())
