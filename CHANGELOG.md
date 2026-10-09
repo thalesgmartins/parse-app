@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.7.0](https://github.com/thalesgmartins/parse-app/compare/v0.6.0...v0.7.0) (2026-10-09)
+
+
+### Features
+
+* **database:** adicionar constraint de unicidade e migracao para competencias ([5ea72e1](https://github.com/thalesgmartins/parse-app/commit/5ea72e1540f860e6092799a046f7ad0fa18bdbbe))
+* **parser:** extrair nome e cpf do segurado a partir do cabecalho cnis ([97224ae](https://github.com/thalesgmartins/parse-app/commit/97224ae5e7322a1ba9d5b5750440814b2164b081))
+* **parser:** identificacao automatica de clientes e consolidacao de competencias ([1344a99](https://github.com/thalesgmartins/parse-app/commit/1344a998e1b4f26b00ce9c2ced1d341f30e59390))
+* **repository:** resolucao automatica de clientes e upsert de competencias ([545b2a8](https://github.com/thalesgmartins/parse-app/commit/545b2a85b9e5969a787c7db39e6b53cb76a3a50d))
+* **web:** exibir e exportar historico consolidado do segurado ([5e9b6d8](https://github.com/thalesgmartins/parse-app/commit/5e9b6d8aa409fbd6b9123be63769ae3a0658c7e2))
+* **worker:** identificar segurado automaticamente no processamento de jobs ([832c67e](https://github.com/thalesgmartins/parse-app/commit/832c67e120e30530fea7021fe8ae390979c06cc4))
+
 ## [0.6.0](https://github.com/thalesgmartins/parse-app/compare/v0.5.1...v0.6.0) (2026-10-09)
 
 
