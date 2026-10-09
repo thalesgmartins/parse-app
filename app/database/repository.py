@@ -1,6 +1,8 @@
 """Camada de repositório para persistência de dados utilizando SQLAlchemy 2.0."""
 
+import re
 import uuid
+from pathlib import Path
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session, joinedload
@@ -113,8 +115,13 @@ def listar_clientes(
         Lista de clientes ordenados pelo nome.
     """
     id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
-    stmt = select(Cliente).where(Cliente.advogado_id == id_uuid).order_by(Cliente.nome)
-    return list(db.scalars(stmt).all())
+    stmt = (
+        select(Cliente)
+        .options(joinedload(Cliente.contribuicoes))
+        .where(Cliente.advogado_id == id_uuid)
+        .order_by(Cliente.nome)
+    )
+    return list(db.scalars(stmt).unique().all())
 
 
 def obter_cliente_por_id(
@@ -133,6 +140,81 @@ def obter_cliente_por_id(
     id_uuid = cliente_id if isinstance(cliente_id, uuid.UUID) else uuid.UUID(str(cliente_id))
     stmt = select(Cliente).where(Cliente.id == id_uuid)
     return db.scalar(stmt)
+
+
+def obter_ou_criar_cliente_por_dados(
+    db: Session,
+    advogado_id: uuid.UUID | str,
+    nome: str | None,
+    cpf: str | None,
+    nome_arquivo: str | None = None,
+) -> Cliente:
+    """Localiza cliente existente por CPF ou Nome, ou cria um novo cadastro.
+
+    Prioriza a busca pelo CPF (prevenindo colisão de homônimos). Se o CPF não
+    estiver cadastrado, busca por nome exato (case-insensitive). Se não
+    encontrado, instancia e persiste um novo Cliente vinculado ao advogado.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        advogado_id: Identificador do advogado proprietário.
+        nome: Nome completo do segurado identificado (opcional).
+        cpf: CPF do segurado identificado (opcional).
+        nome_arquivo: Nome do arquivo para compor o nome de fallback se ausente.
+
+    Returns:
+        Instância de Cliente recuperada ou criada.
+    """
+    id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
+
+    if cpf:
+        cpf_numeros = re.sub(r"\D", "", cpf)
+        clientes_cpf = db.scalars(
+            select(Cliente).where(
+                Cliente.advogado_id == id_uuid,
+                Cliente.cpf.is_not(None),
+            )
+        ).all()
+        for c in clientes_cpf:
+            if c.cpf and re.sub(r"\D", "", c.cpf) == cpf_numeros:
+                if nome and (not c.nome or c.nome.startswith("Segurado")):
+                    c.nome = nome.strip()
+                    db.commit()
+                    db.refresh(c)
+                return c
+
+    if nome and nome.strip():
+        nome_limpo = nome.strip()
+        clientes_nome = db.scalars(
+            select(Cliente).where(
+                Cliente.advogado_id == id_uuid,
+                func.lower(Cliente.nome) == nome_limpo.lower(),
+            )
+        ).all()
+        if not cpf and clientes_nome:
+            return clientes_nome[0]
+        if cpf:
+            for c in clientes_nome:
+                if not c.cpf:
+                    c.cpf = cpf
+                    db.commit()
+                    db.refresh(c)
+                    return c
+
+    nome_final = (
+        nome.strip()
+        if (nome and nome.strip())
+        else f"Segurado ({Path(nome_arquivo).stem if nome_arquivo else 'Novo'})"
+    )
+    novo_cliente = Cliente(
+        advogado_id=id_uuid,
+        nome=nome_final,
+        cpf=cpf,
+    )
+    db.add(novo_cliente)
+    db.commit()
+    db.refresh(novo_cliente)
+    return novo_cliente
 
 
 def salvar_contribuicoes(
@@ -170,6 +252,69 @@ def salvar_contribuicoes(
     db.add_all(novas_contribuicoes)
     db.commit()
     return novas_contribuicoes
+
+
+def salvar_ou_atualizar_contribuicoes(
+    db: Session,
+    cliente_id: uuid.UUID | str,
+    lista: list[CnisCompetencia],
+    job_id: uuid.UUID | str | None = None,
+) -> list[Contribuicao]:
+    """Salva novas competências ou atualiza valores existentes para o cliente.
+
+    Garante idempotência e integridade previdenciária unificando os registros
+    de múltiplos extratos para o mesmo cliente sem duplicar competências.
+    Atualiza com base na última leitura recebida se houver competências repetidas.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        cliente_id: Identificador do cliente titular.
+        lista: Lista de competências extraídas do documento.
+        job_id: Identificador do job de extração de origem (opcional).
+
+    Returns:
+        Lista de Contribuicao salvas ou atualizadas.
+    """
+    cli_uuid = cliente_id if isinstance(cliente_id, uuid.UUID) else uuid.UUID(str(cliente_id))
+    j_uuid = job_id if (job_id is None or isinstance(job_id, uuid.UUID)) else uuid.UUID(str(job_id))
+
+    # Agrupa por competência mantendo a última leitura para cada mês
+    ultimas_leituras: dict[str, CnisCompetencia] = {}
+    for item in lista:
+        ultimas_leituras[item.data_competencia] = item
+
+    contribuicoes_existentes = db.scalars(
+        select(Contribuicao).where(Contribuicao.cliente_id == cli_uuid)
+    ).all()
+
+    # Mapeia existentes e remove duplicatas legadas caso existam
+    mapa_existentes: dict[str, Contribuicao] = {}
+    for c in contribuicoes_existentes:
+        if c.data_competencia in mapa_existentes:
+            db.delete(c)
+        else:
+            mapa_existentes[c.data_competencia] = c
+
+    resultado: list[Contribuicao] = []
+    for data_comp, item in ultimas_leituras.items():
+        if data_comp in mapa_existentes:
+            contribuicao = mapa_existentes[data_comp]
+            contribuicao.valor = item.valor
+            contribuicao.job_id = j_uuid
+            resultado.append(contribuicao)
+        else:
+            nova = Contribuicao(
+                cliente_id=cli_uuid,
+                job_id=j_uuid,
+                data_competencia=data_comp,
+                valor=item.valor,
+            )
+            db.add(nova)
+            mapa_existentes[data_comp] = nova
+            resultado.append(nova)
+
+    db.commit()
+    return resultado
 
 
 def registrar_log_extracao(

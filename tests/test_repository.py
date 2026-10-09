@@ -17,8 +17,10 @@ from app.database.repository import (
     obter_advogado_por_email,
     obter_advogado_por_id,
     obter_contribuicoes_por_job,
+    obter_ou_criar_cliente_por_dados,
     registrar_log_extracao,
     salvar_contribuicoes,
+    salvar_ou_atualizar_contribuicoes,
 )
 
 
@@ -176,3 +178,140 @@ def test_obter_contribuicoes_por_job_ordenacao_cronologica(
         "11/2025",
         "12/2025",
     ]
+
+
+def test_obter_ou_criar_cliente_por_dados_novo(db_session: Session) -> None:
+    """Verifica a criação de um novo cliente quando inexistente no banco."""
+    # Arrange
+    advogado = criar_advogado(db_session, nome="Dr. Santos", email="santos@teste.com", senha="123")
+
+    # Act
+    cliente = obter_ou_criar_cliente_por_dados(
+        db_session,
+        advogado_id=advogado.id,
+        nome="Lucas Oliveira",
+        cpf="111.222.333-44",
+    )
+
+    # Assert
+    assert cliente.id is not None
+    assert cliente.nome == "Lucas Oliveira"
+    assert cliente.cpf == "111.222.333-44"
+    assert cliente.advogado_id == advogado.id
+
+
+def test_obter_ou_criar_cliente_por_dados_reutiliza_por_cpf(db_session: Session) -> None:
+    """Verifica a reutilização do cliente pelo CPF e atualização de nome genérico."""
+    # Arrange
+    advogado = criar_advogado(db_session, nome="Dr. Souza", email="souza@teste.com", senha="123")
+    cliente_inicial = obter_ou_criar_cliente_por_dados(
+        db_session,
+        advogado_id=advogado.id,
+        nome=None,
+        cpf="555.666.777-88",
+        nome_arquivo="extrato_sem_nome.pdf",
+    )
+    assert cliente_inicial.nome.startswith("Segurado")
+
+    # Act
+    cliente_recuperado = obter_ou_criar_cliente_por_dados(
+        db_session,
+        advogado_id=advogado.id,
+        nome="Carlos Silva",
+        cpf="55566677788",  # Sem pontuação
+    )
+
+    # Assert
+    assert cliente_recuperado.id == cliente_inicial.id
+    assert cliente_recuperado.nome == "Carlos Silva"
+
+
+def test_obter_ou_criar_cliente_por_dados_previne_colisao_homonimos(
+    db_session: Session,
+) -> None:
+    """Garante que homônimos com CPFs distintos não sobrescrevam um ao outro."""
+    # Arrange
+    advogado = criar_advogado(db_session, nome="Dra. Paula", email="paula@teste.com", senha="123")
+
+    # Act
+    cliente1 = obter_ou_criar_cliente_por_dados(
+        db_session,
+        advogado_id=advogado.id,
+        nome="João da Silva",
+        cpf="111.111.111-11",
+    )
+    cliente2 = obter_ou_criar_cliente_por_dados(
+        db_session,
+        advogado_id=advogado.id,
+        nome="João da Silva",
+        cpf="222.222.222-22",
+    )
+
+    # Assert
+    assert cliente1.id != cliente2.id
+    assert cliente1.cpf == "111.111.111-11"
+    assert cliente2.cpf == "222.222.222-22"
+
+
+def test_salvar_ou_atualizar_contribuicoes_idempotente(db_session: Session) -> None:
+    """Valida upsert garantindo que reimportações atualizem dados sem duplicar."""
+    # Arrange
+    advogado = criar_advogado(db_session, nome="Dr. Prever", email="prever@teste.com", senha="123")
+    cliente = criar_cliente(db_session, advogado_id=advogado.id, nome="Maria Clara")
+
+    lote1 = [
+        CnisCompetencia(data_competencia="01/2023", valor=1000.0),
+        CnisCompetencia(data_competencia="02/2023", valor=1100.0),
+    ]
+    salvar_ou_atualizar_contribuicoes(db_session, cliente_id=cliente.id, lista=lote1)
+
+    lote2 = [
+        CnisCompetencia(data_competencia="02/2023", valor=1250.0),  # Atualização de valor
+        CnisCompetencia(data_competencia="03/2023", valor=1300.0),  # Nova competência
+    ]
+
+    # Act
+    resultado = salvar_ou_atualizar_contribuicoes(db_session, cliente_id=cliente.id, lista=lote2)
+
+    # Assert
+    clientes = listar_clientes(db_session, advogado_id=advogado.id)
+    assert len(clientes) == 1
+    contribuicoes = clientes[0].contribuicoes
+    assert len(contribuicoes) == 3
+
+    mapa = {c.data_competencia: c.valor for c in contribuicoes}
+    assert mapa["01/2023"] == 1000.0
+    assert mapa["02/2023"] == 1250.0
+    assert mapa["03/2023"] == 1300.0
+    assert len(resultado) == 2
+
+
+def test_salvar_ou_atualizar_contribuicoes_com_duplicadas_no_mesmo_lote_e_legado(
+    db_session: Session,
+) -> None:
+    """Garante que competências repetidas atualizem pela última leitura sem duplicar."""
+    # Arrange
+    advogado = criar_advogado(
+        db_session, nome="Dr. Deduplica", email="dedup@teste.com", senha="123"
+    )
+    cliente = criar_cliente(db_session, advogado_id=advogado.id, nome="Segurado Thales")
+
+    # Simula lote contendo a mesma competência repetida (ex: múltiplos vínculos ou leituras)
+    lote_com_repeticoes = [
+        CnisCompetencia(data_competencia="10/2024", valor=1775.06),
+        CnisCompetencia(data_competencia="11/2024", valor=1753.98),
+        CnisCompetencia(data_competencia="10/2024", valor=876.08),  # Última leitura de 10/2024
+    ]
+
+    # Act
+    salvar_ou_atualizar_contribuicoes(db_session, cliente_id=cliente.id, lista=lote_com_repeticoes)
+
+    # Assert
+    clientes = listar_clientes(db_session, advogado_id=advogado.id)
+    contribuicoes = clientes[0].contribuicoes
+
+    # Apenas 2 competências únicas (10/2024 e 11/2024), sem duplicar 10/2024
+    assert len(contribuicoes) == 2
+    mapa = {c.data_competencia: c.valor for c in contribuicoes}
+    assert mapa["10/2024"] == 876.08  # Atualizado com base na última leitura
+    assert mapa["11/2024"] == 1753.98
