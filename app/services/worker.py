@@ -7,15 +7,17 @@ from pathlib import Path
 
 from sqlalchemy.orm import Session
 
-from app.core.parser import extrair_dados_pdf
+from app.core.parser import extrair_dados_pdf, extrair_metadados_pdf
 from app.database.repository import (
     bloquear_job_para_processamento,
     concluir_job,
     falhar_job,
+    obter_cliente_por_id,
     obter_job_por_id,
+    obter_ou_criar_cliente_por_dados,
     obter_proximo_job,
     registrar_log_extracao,
-    salvar_contribuicoes,
+    salvar_ou_atualizar_contribuicoes,
 )
 from app.database.session import SessionLocal
 
@@ -63,10 +65,27 @@ def processar_job_extracao(
             )
 
         dados = extrair_dados_pdf(caminho_arquivo)
+        nome_segurado, cpf_segurado = extrair_metadados_pdf(caminho_arquivo)
 
-        salvar_contribuicoes(
+        cliente = None
+        if job.cliente_id:
+            cliente = obter_cliente_por_id(session, job.cliente_id)
+
+        if not cliente:
+            cliente = obter_ou_criar_cliente_por_dados(
+                db=session,
+                advogado_id=job.advogado_id,
+                nome=nome_segurado,
+                cpf=cpf_segurado,
+                nome_arquivo=job.nome_arquivo,
+            )
+            job.cliente_id = cliente.id
+            session.commit()
+            session.refresh(job)
+
+        salvar_ou_atualizar_contribuicoes(
             db=session,
-            cliente_id=job.cliente_id,
+            cliente_id=cliente.id,
             lista=dados,
             job_id=job.id,
         )
