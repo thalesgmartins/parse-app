@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.6.0](https://github.com/thalesgmartins/parse-app/compare/v0.5.1...v0.6.0) (2026-10-09)
+
+
+### Features
+
+* **export:** adiciona exportacao csv, copia de dados e historico de extracoes ([8a5ac14](https://github.com/thalesgmartins/parse-app/commit/8a5ac14a9107fe5dbef60f3c74d15e9599039d86))
+* **export:** adiciona exportacao csv, copia de dados e historico de extracoes ([1be4e29](https://github.com/thalesgmartins/parse-app/commit/1be4e29199af324de5881c81b40f75b62a09007d))
+
+
+### Bug Fixes
+
+* **parser:** correcao na extracao de competencias em multiplas colunas no cnis ([71dae70](https://github.com/thalesgmartins/parse-app/commit/71dae704eea7f38c2995315f5e1aabd80f02f475))
+* **parser:** corrige extracao de competencias em multiplas colunas no cnis ([fc552cc](https://github.com/thalesgmartins/parse-app/commit/fc552ccc864b741813b43ed971a7208c53f3206f))
+* **parser:** ordena competencias em ordem cronologica ascendente no banco e na web ([803b938](https://github.com/thalesgmartins/parse-app/commit/803b93873c3ff6b34885ec58447436eedbfa4a4f))
+* **parser:** ordena competencias em ordem cronologica ascendente no banco e na web ([8a880b6](https://github.com/thalesgmartins/parse-app/commit/8a880b61757f826d845bde5e586b406a7b8c4d63))
+
 ## [0.5.1](https://github.com/thalesgmartins/parse-app/compare/v0.5.0...v0.5.1) (2026-10-08)
 
 
