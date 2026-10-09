@@ -382,12 +382,14 @@ def obter_contribuicoes_por_job(
         job_id: Identificador único do job.
 
     Returns:
-        Lista de Contribuicao ordenadas pela data da competência decrescente.
+        Lista de Contribuicao ordenadas pela data da competência cronologicamente.
     """
     id_uuid = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(str(job_id))
+    ano_col = func.substr(Contribuicao.data_competencia, 4, 4)
+    mes_col = func.substr(Contribuicao.data_competencia, 1, 2)
     stmt = (
         select(Contribuicao)
         .where(Contribuicao.job_id == id_uuid)
-        .order_by(Contribuicao.data_competencia.desc())
+        .order_by(ano_col.asc(), mes_col.asc())
     )
     return list(db.scalars(stmt).all())

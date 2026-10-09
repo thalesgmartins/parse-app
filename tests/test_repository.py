@@ -1,5 +1,6 @@
 """Testes unitários para a camada de repositório com SQLAlchemy."""
 
+import uuid
 from collections.abc import Generator
 
 import pytest
@@ -11,9 +12,11 @@ from app.database.models import Base
 from app.database.repository import (
     criar_advogado,
     criar_cliente,
+    criar_job_extracao,
     listar_clientes,
     obter_advogado_por_email,
     obter_advogado_por_id,
+    obter_contribuicoes_por_job,
     registrar_log_extracao,
     salvar_contribuicoes,
 )
@@ -125,3 +128,51 @@ def test_registro_log_extracao(db_session: Session) -> None:
     assert log.nome_arquivo == "cnis_jose.pdf"
     assert log.status == "sucesso"
     assert log.mensagem_erro is None
+
+
+def test_obter_contribuicoes_por_job_ordenacao_cronologica(
+    db_session: Session,
+) -> None:
+    """Verifica se contribuições persistidas fora de ordem são retornadas cronologicamente."""
+    # Arrange
+    advogado = criar_advogado(
+        db_session,
+        nome="Dr. Previdenciário",
+        email="prev@adv.com",
+        senha="senha",
+    )
+    job_id = uuid.uuid4()
+    criar_job_extracao(
+        db_session,
+        job_id=job_id,
+        advogado_id=advogado.id,
+        nome_arquivo="cnis_desordenado.pdf",
+    )
+    competencias = [
+        CnisCompetencia(data_competencia="12/2025", valor=2000.0),
+        CnisCompetencia(data_competencia="12/2024", valor=1800.0),
+        CnisCompetencia(data_competencia="11/2025", valor=1950.0),
+        CnisCompetencia(data_competencia="11/2024", valor=1750.0),
+        CnisCompetencia(data_competencia="10/2024", valor=1700.0),
+        CnisCompetencia(data_competencia="01/2025", valor=1850.0),
+    ]
+    salvar_contribuicoes(
+        db_session,
+        cliente_id=None,
+        lista=competencias,
+        job_id=job_id,
+    )
+
+    # Act
+    contribuicoes = obter_contribuicoes_por_job(db_session, job_id=job_id)
+
+    # Assert
+    datas = [c.data_competencia for c in contribuicoes]
+    assert datas == [
+        "10/2024",
+        "11/2024",
+        "12/2024",
+        "01/2025",
+        "11/2025",
+        "12/2025",
+    ]

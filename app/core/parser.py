@@ -58,7 +58,26 @@ def processar_linhas_cnis(linhas: list[str]) -> list[CnisCompetencia]:
             else:
                 break
 
+    resultados.sort(key=_chave_ordenacao_competencia)
     return resultados
+
+
+def _chave_ordenacao_competencia(item: CnisCompetencia) -> tuple[int, int]:
+    """Retorna tupla (ano, mês) para ordenação cronológica de competências.
+
+    Args:
+        item: Objeto CnisCompetencia a ser ordenado.
+
+    Returns:
+        Tupla (ano, mês) inteiros para ordenação cronológica correta.
+    """
+    partes = item.data_competencia.split("/")
+    if len(partes) == 2:
+        try:
+            return int(partes[1]), int(partes[0])
+        except ValueError:
+            pass
+    return (0, 0)
 
 
 def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
