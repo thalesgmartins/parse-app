@@ -41,29 +41,33 @@ O ParseApp resolve esse problema por meio de uma plataforma centralizada onde:
 A solucao adota uma arquitetura orientada a resiliencia e alta performance, evitando sobrecarga de memoria e travamento de workers HTTP:
 
 ```mermaid
-flowchart TD
-    subgraph Cliente ["Navegador Web / Cliente"]
-        A[Advogado / Usuario] -->|POST /cnis/extrair-html| B[Formulario HTMX]
-        B -->|Recebe card de polling| C[Poller HTMX every 1s]
-        C -->|GET /cnis/jobs/job_id| D[Resultado Final / Tabela]
+flowchart LR
+    subgraph Cliente ["Cliente / Navegador"]
+        direction TB
+        A[Advogado] -->|Upload| B[Formulário HTMX]
+        B -->|Polling 1s| C[Poller HTMX]
+        C -->|Consulta status| D[Tabela / Resultado]
     end
 
     subgraph API ["FastAPI HTTP Layer"]
-        B -->|Upload stream multipart| E[Endpoint Ingestao]
-        E -->|Salva em disco efemero| F["/tmp/uploads/job_id.pdf"]
-        E -->|Registra job status: pending| G[(PostgreSQL extraction_jobs)]
-        E -->|Dispara tarefa assincrona| H[Background Task Runner]
+        direction TB
+        E[Endpoint Ingestão] -->|Grava em disco| F["/tmp/uploads/job_id.pdf"]
+        E -->|Cria job: pending| G[(PostgreSQL extraction_jobs)]
+        E -->|Dispara tarefa| H[Task Runner]
     end
 
-    subgraph Worker ["Worker Assincrono"]
-        H -->|SELECT FOR UPDATE SKIP LOCKED| G
-        H -->|Leitura por stream| F
-        H -->|Extracao de texto| I[Motor pdfplumber]
-        I -->|Salva contribuicoes| J[(PostgreSQL contribuicoes)]
-        I -->|Registra auditoria| K[(PostgreSQL extractions_logs)]
-        I -->|Atualiza status: completed| G
-        I -->|Finally: os.unlink| L[Delecao Imediata do PDF]
+    subgraph Worker ["Worker Assíncrono"]
+        direction TB
+        I[Worker Loop] -->|SKIP LOCKED| G
+        I -->|Lê stream| F
+        I -->|pdfplumber| J[(PostgreSQL contribuicoes)]
+        I -->|Logs auditoria| K[(PostgreSQL extractions_logs)]
+        I -->|Finally: os.unlink| L[Exclusão do PDF]
     end
+
+    B -->|Multipart| E
+    H -.->|Aciona| I
+    C -.->|Verifica| G
 ```
 
 ### Principais Destaques Arquiteturais
