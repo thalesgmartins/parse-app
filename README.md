@@ -50,7 +50,7 @@ flowchart TD
 
     subgraph API ["FastAPI HTTP Layer"]
         B -->|Upload stream multipart| E[Endpoint Ingestao]
-        E -->|Salva em disco efemero| F[/tmp/uploads/job_id.pdf]
+        E -->|Salva em disco efemero| F["/tmp/uploads/job_id.pdf"]
         E -->|Registra job status: pending| G[(PostgreSQL extraction_jobs)]
         E -->|Dispara tarefa assincrona| H[Background Task Runner]
     end
