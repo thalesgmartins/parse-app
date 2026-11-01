@@ -1,159 +1,221 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-BR" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ParseApp - Acesso ao Sistema</title>
+    <title>ParseApp — Acesso ao Sistema</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
     <style>
-        /* Ambient gradient glow for the showcase panel */
-        .ambient-glow {
-            background: radial-gradient(circle at 80% 20%, rgba(121, 181, 185, 0.25) 0%, transparent 60%),
-                        radial-gradient(circle at 20% 80%, rgba(42, 56, 155, 0.4) 0%, transparent 70%);
+        .beam-pillar-1 {
+            background: linear-gradient(to top, rgba(121, 181, 185, 0.85) 0%, rgba(42, 56, 155, 0.75) 45%, rgba(42, 56, 155, 0) 100%);
+        }
+        .beam-pillar-2 {
+            background: linear-gradient(to top, rgba(255, 255, 255, 0.9) 0%, rgba(59, 76, 200, 0.85) 38%, rgba(42, 56, 155, 0.25) 75%, rgba(42, 56, 155, 0) 100%);
+        }
+        .beam-pillar-3 {
+            background: linear-gradient(to top, rgba(61, 76, 184, 0.9) 0%, rgba(42, 56, 155, 0.65) 55%, rgba(42, 56, 155, 0) 100%);
+        }
+        .beam-pillar-4 {
+            background: linear-gradient(to top, rgba(42, 56, 155, 0.8) 0%, rgba(28, 38, 110, 0.4) 50%, rgba(42, 56, 155, 0) 100%);
+        }
+        .beam-ambient {
+            background: radial-gradient(ellipse at 25% 100%, rgba(42, 56, 155, 0.65) 0%, rgba(18, 18, 18, 0) 70%);
         }
     </style>
 </head>
-<body class="bg-[#e5e9eb] flex items-center justify-center min-h-screen p-4 sm:p-6 lg:p-8 font-sans antialiased">
+<body class="bg-[#121212] text-zinc-100 min-h-screen flex items-center justify-center p-4 sm:p-6 lg:p-10 font-sans antialiased selection:bg-[#2a389b] selection:text-white">
 
-    <!-- Card Split-Screen Moderno Inspirado nos Moodboards de SaaS -->
-    <div class="w-full max-w-4xl bg-white rounded-3xl shadow-xl border border-slate-200/80 p-3 sm:p-4 grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch overflow-hidden">
+    <main class="w-full max-w-5xl bg-[#1e1e1e] rounded-[24px] p-3 sm:p-4 border border-white/[0.06] shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-4 min-h-[600px]">
 
-        <!-- Coluna Esquerda: Formulário de Login (7 colunas) -->
-        <div class="md:col-span-7 p-6 sm:p-10 flex flex-col justify-between">
-            <div>
-                <!-- Logo & Identificador Superior -->
-                <div class="flex items-center justify-between mb-8">
-                    <img src="/static/images/parse-logo-vazada-preta.png" alt="ParseApp" class="h-9 object-contain">
-                    <span class="text-[11px] font-semibold text-[#2a389b] bg-[#eaf4f5] px-2.5 py-1 rounded-full uppercase tracking-wider">
-                        Acesso Seguro
-                    </span>
+        <!-- Painel Esquerdo: Apresentação Visual (5 colunas) -->
+        <section class="lg:col-span-5 bg-[#0c0e17] rounded-[18px] p-8 sm:p-10 flex flex-col justify-between relative overflow-hidden border border-white/[0.05] min-h-[320px] lg:min-h-full">
+
+            <!-- Texto de Impacto Superior -->
+            <div class="relative z-20 space-y-4">
+                <h1 class="text-2xl sm:text-3xl lg:text-[32px] font-semibold text-white tracking-tight leading-[1.2]">
+                    Automatize a extração de CNIS com precisão.
+                </h1>
+                <p class="text-sm text-zinc-400 leading-relaxed max-w-xs">
+                    Converte extratos do Meu INSS em séries contributivas estruturadas, validadas e prontas para cálculo previdenciário.
+                </p>
+            </div>
+
+            <!-- Rodapé Discreto no Painel Esquerdo -->
+            <div class="relative z-20 pt-6 flex items-center justify-between text-[11px] text-zinc-400/80 font-medium">
+                <span>SaaS B2B Previdenciário</span>
+                <span>Isolamento LGPD</span>
+            </div>
+
+            <!-- Grafismo Abstrato de Feixes Verticais em Azul #2a389b -->
+            <div class="beam-ambient absolute inset-0 pointer-events-none z-0"></div>
+            <div class="absolute bottom-0 left-0 right-0 h-72 flex items-end pointer-events-none z-10 opacity-90">
+                <div class="w-12 sm:w-14 h-48 beam-pillar-1 blur-[2px] border-r border-white/10"></div>
+                <div class="w-14 sm:w-16 h-64 beam-pillar-2 blur-[1px] border-r border-white/20"></div>
+                <div class="w-14 sm:w-16 h-56 beam-pillar-3 blur-[1px] border-r border-white/10"></div>
+                <div class="w-14 sm:w-16 h-40 beam-pillar-4 blur-[2px] border-r border-white/5"></div>
+                <div class="w-14 sm:w-16 h-24 beam-pillar-4 opacity-50 blur-[4px]"></div>
+            </div>
+        </section>
+
+        <!-- Painel Direito: Formulário em Modo Escuro (7 colunas) -->
+        <section class="lg:col-span-7 bg-[#1e1e1e] rounded-[18px] px-6 py-8 sm:px-12 sm:py-10 flex flex-col justify-center">
+            <div class="w-full max-w-md mx-auto">
+
+                <!-- Logotipo do ParseApp -->
+                <div class="flex items-center gap-3 mb-7">
+                    <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-10 h-10 rounded-xl object-contain shadow-md border border-white/10">
+                    <img src="/static/images/parse-logo-vazada-branca.png" alt="ParseApp" class="h-6 object-contain opacity-95">
                 </div>
 
                 <!-- Cabeçalho do Formulário -->
-                <div class="mb-6">
-                    <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">Bem-vindo de volta</h1>
-                    <p class="text-xs sm:text-sm text-slate-500 mt-1">Informe suas credenciais para gerenciar clientes e extratos.</p>
+                <div class="pb-6 mb-6 border-b border-white/[0.08]">
+                    <h2 id="auth-title" class="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+                        Bem-vindo de volta
+                    </h2>
+                    <p id="auth-subtitle" class="text-sm text-zinc-400 mt-1.5">
+                        Acesse o painel do seu escritório previdenciário
+                    </p>
                 </div>
 
-                <!-- Banner de Erro em caso de falha de login -->
+                <!-- Alerta de Erro de Autenticação -->
                 {% if erro %}
-                <div class="mb-5 p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2.5 animate-fadeIn">
-                    <svg class="w-4 h-4 text-rose-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2.5">
+                    <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <span class="font-medium">{{ erro }}</span>
                 </div>
                 {% endif %}
 
-                <!-- Formulário -->
-                <form action="/auth/login" method="POST" class="space-y-4">
+                <!-- Formulário de Login -->
+                <form id="form-login" action="/auth/login" method="POST" class="space-y-5">
                     <div>
-                        <label for="email" class="block text-xs font-semibold text-slate-700 mb-1.5">E-mail Profissional</label>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.206" />
-                                </svg>
-                            </span>
-                            <input type="email" name="email" id="email" required placeholder="advogado@escritorio.com"
-                                   class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/15 focus:bg-white transition-all">
-                        </div>
+                        <label for="email" class="block text-xs font-medium text-zinc-400 mb-2">
+                            Seu e-mail profissional
+                        </label>
+                        <input type="email"
+                               name="email"
+                               id="email"
+                               required
+                               autocomplete="email"
+                               placeholder="advogado@escritorio.com.br"
+                               class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/35 transition-all">
                     </div>
 
                     <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <label for="password" class="block text-xs font-semibold text-slate-700">Senha de Acesso</label>
-                            <a href="#" class="text-[11px] font-medium text-[#2a389b] hover:underline" tabindex="-1">Esqueceu a senha?</a>
+                        <div class="flex items-center justify-between mb-2">
+                            <label for="password" class="block text-xs font-medium text-zinc-400">
+                                Sua senha
+                            </label>
+                            <span class="text-[11px] text-zinc-500">Sessão segura JWT</span>
                         </div>
-                        <div class="relative">
-                            <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-slate-400">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-                                </svg>
-                            </span>
-                            <input type="password" name="password" id="password" required placeholder="••••••••"
-                                   class="w-full pl-10 pr-3.5 py-2.5 bg-slate-50/70 border border-slate-200 rounded-xl text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/15 focus:bg-white transition-all">
-                        </div>
+                        <input type="password"
+                               name="password"
+                               id="password"
+                               required
+                               autocomplete="current-password"
+                               placeholder="••••••••••••"
+                               class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/35 transition-all">
                     </div>
 
                     <div class="pt-2">
                         <button type="submit"
-                                class="w-full py-2.5 px-4 bg-[#2a389b] hover:bg-[#1e2978] text-white font-semibold text-sm rounded-xl shadow-md hover:shadow-lg transition-all flex items-center justify-center gap-2">
-                            <span>Acessar Painel do Escritório</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                            </svg>
+                                class="w-full py-3.5 px-5 bg-[#2a389b] hover:bg-[#3444b8] active:bg-[#222d7c] text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#2a389b]/25 transition-all cursor-pointer flex items-center justify-center gap-2">
+                            <span>Entrar</span>
                         </button>
                     </div>
                 </form>
-            </div>
 
-            <!-- Rodapé do Formulário -->
-            <div class="pt-6 mt-6 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-400">
-                <span>Conforme Art. 11 LGPD</span>
-                <span>Criptografia bcrypt &bull; JWT</span>
-            </div>
-        </div>
-
-        <!-- Coluna Direita: Showcase Visual (5 colunas) Inspirado em info ali sahab & download (1) -->
-        <div class="md:col-span-5 bg-gradient-to-br from-[#2a389b] via-[#222d7c] to-[#161f5b] rounded-2xl p-8 sm:p-10 text-white flex flex-col justify-between relative overflow-hidden shadow-inner">
-            <!-- Camada de Iluminação Ambiente -->
-            <div class="ambient-glow absolute inset-0 pointer-events-none"></div>
-
-            <!-- Topo do Showcase -->
-            <div class="relative z-10">
-                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-xs text-[11px] font-semibold text-white/90 border border-white/10 mb-6">
-                    <span class="w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
-                    ParseApp Enterprise
-                </div>
-
-                <h2 class="text-xl sm:text-2xl font-bold tracking-tight text-white leading-snug">
-                    Extração inteligente de extratos previdenciários.
-                </h2>
-                <p class="text-xs text-white/70 mt-2 leading-relaxed">
-                    Transforme PDFs do Meu INSS em dados estruturados com tabelas de remunerações prontas para cálculo de RMI.
-                </p>
-            </div>
-
-            <!-- Recursos em Destaque -->
-            <div class="relative z-10 space-y-3.5 my-8">
-                <div class="flex items-start gap-3 text-xs text-white/90">
-                    <div class="w-5 h-5 rounded-md bg-[#79b5b9]/20 text-[#79b5b9] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+                <!-- Formulário de Cadastro de Escritório (Alternável) -->
+                <form id="form-register" action="/auth/register" method="POST" class="space-y-4 hidden">
+                    <div>
+                        <label for="reg-nome" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                            Nome do Advogado ou Escritório
+                        </label>
+                        <input type="text"
+                               name="nome"
+                               id="reg-nome"
+                               required
+                               placeholder="Dr. Carlos Silva"
+                               class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/35 transition-all">
                     </div>
-                    <span>Leitura analítica página a página via <strong>pdfplumber</strong></span>
-                </div>
 
-                <div class="flex items-start gap-3 text-xs text-white/90">
-                    <div class="w-5 h-5 rounded-md bg-[#79b5b9]/20 text-[#79b5b9] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+                    <div>
+                        <label for="reg-email" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                            E-mail profissional
+                        </label>
+                        <input type="email"
+                               name="email"
+                               id="reg-email"
+                               required
+                               placeholder="contato@escritorio.com.br"
+                               class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/35 transition-all">
                     </div>
-                    <span>Persistência isolada por advogado em banco PostgreSQL</span>
-                </div>
 
-                <div class="flex items-start gap-3 text-xs text-white/90">
-                    <div class="w-5 h-5 rounded-md bg-[#79b5b9]/20 text-[#79b5b9] flex items-center justify-center shrink-0 mt-0.5">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-                        </svg>
+                    <div>
+                        <label for="reg-password" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                            Crie uma senha de acesso
+                        </label>
+                        <input type="password"
+                               name="password"
+                               id="reg-password"
+                               required
+                               minlength="6"
+                               placeholder="••••••••••••"
+                               class="w-full px-4 py-3 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-2 focus:ring-[#2a389b]/35 transition-all">
                     </div>
-                    <span>Auditoria de conformidade com logs rastreáveis</span>
+
+                    <div class="pt-2">
+                        <button type="submit"
+                                class="w-full py-3.5 px-5 bg-[#2a389b] hover:bg-[#3444b8] text-white font-semibold text-sm rounded-xl shadow-lg shadow-[#2a389b]/25 transition-all cursor-pointer">
+                            Criar conta profissional
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Alternância Login / Cadastro -->
+                <div class="mt-6 text-center text-xs text-zinc-400">
+                    <span id="toggle-prompt">Novo no ParseApp?</span>
+                    <button type="button"
+                            id="toggle-btn"
+                            onclick="alternarModoAutenticacao()"
+                            class="ml-1 font-semibold text-white underline decoration-[#2a389b] underline-offset-4 hover:text-[#79b5b9] transition-colors cursor-pointer">
+                        Criar nova conta
+                    </button>
                 </div>
+
             </div>
+        </section>
 
-            <!-- Rodapé do Showcase -->
-            <div class="relative z-10 pt-4 border-t border-white/10 flex items-center justify-between text-[11px] text-white/60">
-                <span>Versão 0.2.0</span>
-                <span>PostgreSQL 16 &bull; FastAPI</span>
-            </div>
-        </div>
+    </main>
 
-    </div>
+    <script>
+        function alternarModoAutenticacao() {
+            const formLogin = document.getElementById('form-login');
+            const formReg = document.getElementById('form-register');
+            const title = document.getElementById('auth-title');
+            const subtitle = document.getElementById('auth-subtitle');
+            const prompt = document.getElementById('toggle-prompt');
+            const btn = document.getElementById('toggle-btn');
 
+            const exibindoLogin = !formLogin.classList.contains('hidden');
+            if (exibindoLogin) {
+                formLogin.classList.add('hidden');
+                formReg.classList.remove('hidden');
+                title.textContent = 'Começar agora';
+                subtitle.textContent = 'Cadastre seu escritório para processar extratos CNIS';
+                prompt.textContent = 'Já possui uma conta?';
+                btn.textContent = 'Entrar';
+            } else {
+                formReg.classList.add('hidden');
+                formLogin.classList.remove('hidden');
+                title.textContent = 'Bem-vindo de volta';
+                subtitle.textContent = 'Acesse o painel do seu escritório previdenciário';
+                prompt.textContent = 'Novo no ParseApp?';
+                btn.textContent = 'Criar nova conta';
+            }
+        }
+    </script>
 </body>
 </html>
