@@ -1,55 +1,110 @@
+{% if jobs_lote %}
 <div id="job-status-poller"
-     hx-get="/cnis/jobs/{{ job.id }}"
+     hx-get="/cnis/lote?ids={{ ids_str }}"
      hx-trigger="every 1s"
      hx-target="#resultado-aqui"
      hx-swap="innerHTML"
-     class="bg-white border border-slate-200/90 rounded-2xl p-6 sm:p-8 shadow-sm space-y-5 animate-fadeIn">
+     class="bg-[#1e1e1e] border border-[#2a389b]/50 rounded-[20px] p-6 sm:p-8 shadow-xl space-y-5">
 
-    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
         <div class="flex items-center gap-3.5">
-            <div class="w-11 h-11 rounded-2xl bg-blue-50 text-[#2a389b] flex items-center justify-center shrink-0 shadow-2xs">
+            <div class="w-11 h-11 rounded-2xl bg-[#2a389b]/25 border border-[#2a389b]/50 text-[#8da2fb] flex items-center justify-center shrink-0">
                 <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                 </svg>
             </div>
             <div>
-                <h3 class="text-sm font-bold text-slate-900">
+                <h3 class="text-sm font-bold text-white">
+                    Processando Lote de Extratos CNIS ({{ concluidos }}/{{ total }})
+                </h3>
+                <p class="text-xs text-zinc-400 mt-0.5">
+                    Identificando titulares e unificando competências automaticamente
+                </p>
+            </div>
+        </div>
+
+        <span class="text-xs font-mono font-semibold px-3 py-1 rounded-full bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/50 shrink-0">
+            {{ percentual }}%
+        </span>
+    </div>
+
+    <div class="space-y-2">
+        <div class="w-full bg-[#252525] rounded-full h-2.5 overflow-hidden">
+            <div class="bg-[#2a389b] h-2.5 rounded-full transition-all duration-300 animate-pulse"
+                 style="width: {{ percentual }}%"></div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+        {% for item_job in jobs_lote %}
+        <div class="px-3.5 py-2.5 bg-[#252525] rounded-xl border border-white/[0.05] flex items-center justify-between gap-2 text-xs">
+            <span class="font-mono text-zinc-200 truncate">{{ item_job.nome_arquivo }}</span>
+            {% if item_job.status == 'completed' %}
+            <span class="text-[10px] font-semibold text-[#93a3ff] shrink-0">Concluído</span>
+            {% elif item_job.status == 'failed' %}
+            <span class="text-[10px] font-semibold text-rose-400 shrink-0">Inválido</span>
+            {% else %}
+            <span class="text-[10px] font-semibold text-zinc-400 shrink-0">Lendo...</span>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% else %}
+<div id="job-status-poller"
+     hx-get="/cnis/jobs/{{ job.id }}"
+     hx-trigger="every 1s"
+     hx-target="#resultado-aqui"
+     hx-swap="innerHTML"
+     class="bg-[#1e1e1e] border border-[#2a389b]/50 rounded-[20px] p-6 sm:p-8 shadow-xl space-y-5">
+
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
+        <div class="flex items-center gap-3.5">
+            <div class="w-11 h-11 rounded-2xl bg-[#2a389b]/25 border border-[#2a389b]/50 text-[#8da2fb] flex items-center justify-center shrink-0">
+                <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-sm font-bold text-white">
                     {% if job.status == 'pending' %}
                         Fila de Processamento: Aguardando Worker
                     {% else %}
                         Processando Extrato CNIS em Segundo Plano
                     {% endif %}
                 </h3>
-                <p class="text-xs text-slate-500 font-mono mt-0.5 flex items-center gap-1.5">
-                    <span class="inline-block w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
+                <p class="text-xs text-zinc-400 font-mono mt-0.5 flex items-center gap-2">
+                    <span class="inline-block w-2 h-2 rounded-full bg-[#2a389b]"></span>
                     {{ job.nome_arquivo }}
                 </p>
             </div>
         </div>
 
-        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-[#eaf4f5] text-[#4e8d91] border border-[#79b5b9]/30 shrink-0">
-            {% if job.status == 'pending' %}Na Fila (Postgres){% else %}Em Execução{% endif %}
+        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/50 shrink-0">
+            {% if job.status == 'pending' %}Em Fila{% else %}Em processamento{% endif %}
         </span>
     </div>
 
-    <!-- Barra de Progresso Animada -->
+    <!-- Barra de Progresso Azul (#2a389b) -->
     <div class="space-y-2">
-        <div class="flex justify-between text-xs text-slate-500 font-medium">
-            <span>Extração assíncrona (PostgreSQL Queue)</span>
-            <span class="font-mono text-slate-400">Verificando a cada 1s...</span>
+        <div class="flex justify-between text-xs text-zinc-400 font-medium">
+            <span>Extração assíncrona de competências e vínculos</span>
+            <span class="font-mono text-zinc-300">75%</span>
         </div>
-        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+        <div class="w-full bg-[#252525] rounded-full h-2.5 overflow-hidden">
             <div class="bg-[#2a389b] h-2.5 rounded-full w-3/4 animate-pulse"></div>
         </div>
     </div>
 
-    <div class="p-3.5 bg-slate-50 rounded-xl text-xs text-slate-600 flex items-center gap-2.5">
-        <svg class="w-4 h-4 text-[#2a389b] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="p-3.5 bg-[#252525] rounded-xl text-xs text-zinc-400 flex items-center gap-2.5 border border-white/[0.04]">
+        <svg class="w-4 h-4 text-[#79b5b9] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
         <span>
-            O PDF foi persistido no volume efêmero e está sendo processado sem bloquear o servidor. O resultado será exibido automaticamente assim que finalizado.
+            O documento está sendo analisado em segundo plano. As competências serão exibidas automaticamente assim que concluído.
         </span>
     </div>
 </div>
+{% endif %}

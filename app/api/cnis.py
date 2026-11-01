@@ -14,13 +14,13 @@ from fastapi import (
     Request,
     UploadFile,
 )
-from fastapi.responses import RedirectResponse, Response
+from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from app.api.auth import obter_usuario_logado
 from app.core.config import MAX_UPLOAD_SIZE_BYTES, UPLOAD_DIR
-from app.database.models import Advogado
+from app.database.models import Advogado, JobExtracao
 from app.database.repository import (
     criar_cliente,
     criar_job_extracao,
@@ -30,11 +30,13 @@ from app.database.repository import (
     obter_job_por_id,
 )
 from app.database.session import get_db
+from app.services.analytics import formatar_moeda_br
 from app.services.export import gerar_csv_contribuicoes
 from app.services.worker import processar_job_extracao
 
 router = APIRouter(prefix="/cnis", tags=["Processamento CNIS"])
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "web" / "templates")
+templates.env.filters["moeda_br"] = formatar_moeda_br
 
 
 def _salvar_arquivo_temporario_com_limite(
@@ -144,21 +146,57 @@ async def extrair_documento_cnis(
     }
 
 
-@router.post("/extrair-html")
+def _enfileirar_lote_pdfs(
+    arquivos: list[UploadFile],
+    usuario: Advogado,
+    db: Session,
+    background_tasks: BackgroundTasks,
+    cli_uuid: uuid.UUID | None = None,
+) -> list[JobExtracao]:
+    """Salva e enfileira múltiplos arquivos PDF para processamento assíncrono."""
+    UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+    jobs_criados: list[JobExtracao] = []
+
+    for arq in arquivos:
+        nome_orig = arq.filename or "extrato.pdf"
+        ctype = arq.content_type or ""
+        if not nome_orig.lower().endswith(".pdf") and ctype != "application/pdf":
+            continue
+
+        job_id = uuid.uuid4()
+        caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
+        try:
+            _salvar_arquivo_temporario_com_limite(arq, caminho_temp)
+        except Exception:
+            continue
+
+        job = criar_job_extracao(
+            db=db,
+            job_id=job_id,
+            advogado_id=usuario.id,
+            nome_arquivo=nome_orig,
+            cliente_id=cli_uuid,
+            caminho_arquivo_temp=str(caminho_temp),
+        )
+        background_tasks.add_task(processar_job_extracao, job_id=job.id)
+        jobs_criados.append(job)
+
+    return jobs_criados
+
+
+@router.post("/extrair-html", response_model=None)
 async def extrair_documento_cnis_html(
     request: Request,
-    arquivo: Annotated[UploadFile, File()],
+    arquivo: Annotated[list[UploadFile], File()],
     usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
     db: Annotated[Session, Depends(get_db)],
     background_tasks: BackgroundTasks,
-    cliente_id: Annotated[str | None, Form()] = None,
-):
-    """Enfileira o extrato CNIS e devolve o fragmento de polling HTMX imediato.
+) -> HTMLResponse:
+    """Enfileira um ou mais extratos CNIS e devolve o fragmento de polling HTMX.
 
     Args:
         request: Objeto da requisição HTTP.
-        cliente_id: Identificador único do cliente selecionado.
-        arquivo: Arquivo PDF enviado no formulário multipart.
+        arquivo: Lista de arquivos PDF enviados no formulário multipart.
         usuario: Advogado autenticado via sessão/cookie.
         db: Sessão ativa do banco de dados relacional.
         background_tasks: Orquestrador de tarefas assíncronas do FastAPI.
@@ -166,8 +204,47 @@ async def extrair_documento_cnis_html(
     Returns:
         TemplateResponse contendo o fragmento de polling ou erro amigável.
     """
-    nome_original = arquivo.filename or "extrato.pdf"
-    content_type = arquivo.content_type or ""
+    form_data = await request.form()
+    cliente_id_raw = form_data.get("cliente_id")
+    cli_uuid: uuid.UUID | None = None
+    if isinstance(cliente_id_raw, str) and cliente_id_raw:
+        try:
+            cli_uuid = uuid.UUID(cliente_id_raw)
+        except ValueError:
+            cli_uuid = None
+
+    if len(arquivo) > 1:
+        jobs_lote = _enfileirar_lote_pdfs(
+            arquivos=arquivo,
+            usuario=usuario,
+            db=db,
+            background_tasks=background_tasks,
+            cli_uuid=cli_uuid,
+        )
+        if not jobs_lote:
+            return templates.TemplateResponse(
+                request=request,
+                name="tabela_resultados.html",
+                context={
+                    "erro": "Apenas arquivos no formato PDF são aceitos para análise do CNIS."
+                },
+            )
+        ids_str = ",".join(str(j.id) for j in jobs_lote)
+        return templates.TemplateResponse(
+            request=request,
+            name="progresso_extracao.html",
+            context={
+                "jobs_lote": jobs_lote,
+                "ids_str": ids_str,
+                "concluidos": 0,
+                "total": len(jobs_lote),
+                "percentual": 15,
+            },
+        )
+
+    unico = arquivo[0]
+    nome_original = unico.filename or "extrato.pdf"
+    content_type = unico.content_type or ""
 
     if not nome_original.lower().endswith(".pdf") and content_type != "application/pdf":
         return templates.TemplateResponse(
@@ -181,7 +258,7 @@ async def extrair_documento_cnis_html(
     caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
 
     try:
-        _salvar_arquivo_temporario_com_limite(arquivo, caminho_temp)
+        _salvar_arquivo_temporario_com_limite(unico, caminho_temp)
     except ValueError as val_err:
         return templates.TemplateResponse(
             request=request,
@@ -194,13 +271,6 @@ async def extrair_documento_cnis_html(
             name="tabela_resultados.html",
             context={"erro": f"Erro ao persistir arquivo temporário no volume efêmero: {str(exc)}"},
         )
-
-    cli_uuid: uuid.UUID | None = None
-    if cliente_id:
-        try:
-            cli_uuid = uuid.UUID(cliente_id)
-        except ValueError:
-            cli_uuid = None
 
     job = criar_job_extracao(
         db=db,
@@ -217,6 +287,66 @@ async def extrair_documento_cnis_html(
         request=request,
         name="progresso_extracao.html",
         context={"job": job},
+    )
+
+
+@router.get("/lote", response_model=None)
+async def obter_progresso_lote_view(
+    request: Request,
+    ids: str,
+    usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
+    db: Annotated[Session, Depends(get_db)],
+) -> HTMLResponse:
+    """Acompanha o progresso de múltiplos jobs enviados em lote via HTMX.
+
+    Args:
+        request: Objeto da requisição HTTP.
+        ids: Lista de UUIDs separados por vírgula.
+        usuario: Advogado autenticado.
+        db: Sessão ativa do banco de dados.
+
+    Returns:
+        TemplateResponse de progresso ou resumo final do lote.
+    """
+    jobs_lote: list[JobExtracao] = []
+    for raw_id in ids.split(","):
+        raw_limpo = raw_id.strip()
+        if not raw_limpo:
+            continue
+        try:
+            j = obter_job_por_id(db, uuid.UUID(raw_limpo))
+            if j and j.advogado_id == usuario.id:
+                jobs_lote.append(j)
+        except ValueError:
+            continue
+
+    total = len(jobs_lote)
+    if total == 0:
+        return templates.TemplateResponse(
+            request=request,
+            name="tabela_resultados.html",
+            context={"erro": "Nenhum job encontrado para o lote informado."},
+        )
+
+    finalizados = sum(1 for j in jobs_lote if j.status not in ("pending", "processing"))
+    if finalizados < total:
+        pct = max(15, round((finalizados / total) * 100))
+        return templates.TemplateResponse(
+            request=request,
+            name="progresso_extracao.html",
+            context={
+                "jobs_lote": jobs_lote,
+                "ids_str": ids,
+                "concluidos": finalizados,
+                "total": total,
+                "percentual": pct,
+            },
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="tabela_resultados.html",
+        context={"jobs_lote": jobs_lote},
     )
 
 

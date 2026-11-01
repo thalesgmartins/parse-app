@@ -18,6 +18,7 @@ from app.database.repository import (
     criar_cliente,
     criar_job_extracao,
     falhar_job,
+    listar_clientes,
     obter_cliente_por_id,
     obter_contribuicoes_por_job,
     obter_job_por_id,
@@ -287,3 +288,36 @@ def test_processar_job_extracao_identificacao_automatica_cliente(
     assert cliente_criado.nome == "Segurado Identificado Automaticamente"
     assert cliente_criado.cpf == "999.888.777-66"
     assert len(cliente_criado.contribuicoes) == 2
+
+
+def test_processar_job_pdf_sem_competencias_nao_cria_cliente_e_falha(
+    db_session: Session, tmp_path: Path
+) -> None:
+    """Garante que um PDF sem competências CNIS falhe e não crie segurado fantasma."""
+    # Arrange
+    advogado = criar_advogado(db_session, nome="Dr. Filtro", email="filtro@adv.com", senha="senha")
+    arquivo_temp = tmp_path / "boleto_qualquer.pdf"
+    arquivo_temp.write_bytes(b"%PDF-1.4 fake non-cnis")
+
+    job_id = uuid.uuid4()
+    criar_job_extracao(
+        db=db_session,
+        job_id=job_id,
+        advogado_id=advogado.id,
+        cliente_id=None,
+        nome_arquivo="boleto_qualquer.pdf",
+        caminho_arquivo_temp=str(arquivo_temp),
+    )
+
+    # Act
+    with patch("app.services.worker.extrair_dados_pdf", return_value=[]):
+        sucesso = processar_job_extracao(job_id=job_id, db=db_session)
+
+    # Assert
+    assert sucesso is False
+    job_atualizado = obter_job_por_id(db_session, job_id)
+    assert job_atualizado is not None
+    assert job_atualizado.status == "failed"
+    assert job_atualizado.cliente_id is None
+    assert "Nenhuma competência" in (job_atualizado.mensagem_erro or "")
+    assert listar_clientes(db_session, advogado_id=advogado.id) == []

@@ -1,127 +1,178 @@
 {% if erro %}
-<!-- Estado de Erro -->
-<div class="bg-rose-50 border border-rose-200 text-rose-800 p-5 rounded-2xl shadow-sm flex items-start gap-3.5 animate-fadeIn">
-    <div class="w-9 h-9 rounded-xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+<!-- Estado de Erro em Modo Escuro -->
+<div class="bg-rose-500/10 border border-rose-500/30 text-rose-200 p-5 rounded-[20px] shadow-lg flex items-start gap-3.5">
+    <div class="w-9 h-9 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
         </svg>
     </div>
     <div>
-        <h3 class="text-sm font-bold text-rose-900">Falha no Processamento do Documento</h3>
-        <p class="text-xs text-rose-700 mt-1 leading-relaxed">{{ erro }}</p>
+        <h3 class="text-sm font-bold text-white">Falha no Processamento do Documento</h3>
+        <p class="text-xs text-rose-300 mt-1 leading-relaxed">{{ erro }}</p>
+    </div>
+</div>
+
+{% elif jobs_lote %}
+<!-- Resumo de Processamento em Lote -->
+<div class="bg-[#1e1e1e] border border-white/[0.08] rounded-[20px] p-6 shadow-xl space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
+        <div>
+            <h2 class="text-base font-bold text-white">Lote de Extratos Processado</h2>
+            <p class="text-xs text-zinc-400 mt-0.5">
+                {{ jobs_lote|length }} arquivos analisados na fila assíncrona.
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/dashboard"
+               class="px-3.5 py-2 bg-[#252525] hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-white/10 transition-colors">
+                Atualizar Painel
+            </a>
+            <a href="/analise"
+               class="px-3.5 py-2 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl transition-colors">
+                Abrir Estatísticas
+            </a>
+        </div>
+    </div>
+
+    <div class="space-y-2.5">
+        {% for j in jobs_lote %}
+        <div class="p-3.5 bg-[#252525]/80 rounded-xl border border-white/[0.05] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="font-mono font-semibold text-white truncate">{{ j.nome_arquivo }}</span>
+                    {% if j.status == 'completed' %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                        {{ j.total_competencias }} comp.
+                    </span>
+                    {% else %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                        Não é CNIS válido
+                    </span>
+                    {% endif %}
+                </div>
+                {% if j.status == 'failed' and j.mensagem_erro %}
+                <p class="text-[11px] text-rose-300/90 mt-1">{{ j.mensagem_erro }}</p>
+                {% endif %}
+            </div>
+
+            {% if j.status == 'completed' %}
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="/analise?job_id={{ j.id }}"
+                   class="px-3 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-[11px] font-semibold rounded-xl transition-colors">
+                    Ver Análise
+                </a>
+                <a href="/cnis/jobs/{{ j.id }}/csv"
+                   download
+                   class="px-2.5 py-1.5 bg-[#181818] hover:bg-zinc-800 text-[#79b5b9] text-[11px] font-mono font-semibold rounded-xl border border-white/[0.06] transition-colors">
+                    CSV
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
     </div>
 </div>
 
 {% elif dados and dados|length > 0 %}
-<!-- Estado de Sucesso com Resumo Financeiro e Tabela -->
-<div class="bg-white border border-slate-200/90 rounded-2xl overflow-hidden shadow-sm space-y-0 animate-fadeIn">
+<!-- Estado de Sucesso em Modo Escuro -->
+<div class="bg-[#1e1e1e] border border-white/[0.08] rounded-[20px] overflow-hidden shadow-xl">
 
-    <!-- Topo do Card de Resultados com Métricas da Extração -->
-    <div class="p-6 bg-slate-50/70 border-b border-slate-200/80 space-y-4">
+    <!-- Cabeçalho do Card de Resultados -->
+    <div class="p-6 bg-[#252525]/60 border-b border-white/[0.06] space-y-4">
         <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-                <div class="flex items-center gap-2">
-                    <h2 class="text-base font-bold text-slate-900">Extrato Processado com Sucesso</h2>
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-[#eaf4f5] text-[#4e8d91] border border-[#79b5b9]/30">
+                <div class="flex flex-wrap items-center gap-2.5">
+                    <h2 class="text-base font-bold text-white">Extrato Processado com Sucesso</h2>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/50">
                         {{ dados|length }} Competências Consolidadas
                     </span>
                 </div>
-                <p class="text-xs text-slate-500 mt-0.5">Contribuições identificadas e unificadas automaticamente no cadastro do cliente.</p>
+                <p class="text-xs text-zinc-400 mt-1">
+                    Série contributiva validada pelo Pydantic e persistida no histórico do segurado.
+                </p>
             </div>
 
-            <!-- Mini Stat: Intervalo de Competências -->
-            <div class="flex items-center gap-2 text-xs bg-white px-3.5 py-2 rounded-xl border border-slate-200 shadow-2xs">
-                <span class="text-slate-400 font-medium">Período:</span>
-                <span class="font-mono font-semibold text-slate-700">{{ dados[0].data_competencia }}</span>
-                <span class="text-slate-300">&rarr;</span>
-                <span class="font-mono font-semibold text-slate-700">{{ dados[-1].data_competencia }}</span>
+            <!-- Período Identificado -->
+            <div class="flex items-center gap-2 text-xs bg-[#181818] px-3.5 py-2 rounded-xl border border-white/[0.06]">
+                <span class="text-zinc-500 font-medium">Período:</span>
+                <span class="font-mono font-semibold text-white">{{ dados[0].data_competencia }}</span>
+                <span class="text-zinc-500">&rarr;</span>
+                <span class="font-mono font-semibold text-white">{{ dados[-1].data_competencia }}</span>
             </div>
         </div>
 
-        <!-- Barra de Ações: Copiar e Exportar -->
-        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-200/60">
-            <div class="flex items-center gap-2 text-xs text-slate-600">
+        <!-- Barra de Ações: Abrir Estatísticas (Tela 3), Copiar e Exportar CSV -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-white/[0.06]">
+            <div class="flex flex-wrap items-center gap-2 text-xs">
                 {% if cliente or (job and job.cliente) %}
                 {% set segurado = cliente or job.cliente %}
-                <span class="text-[11px] font-semibold text-[#2a389b] bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-100 flex items-center gap-1.5">
-                    <svg class="w-3.5 h-3.5 text-[#2a389b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                <span class="text-[11px] font-semibold text-white bg-[#2a389b]/25 px-3 py-1 rounded-lg border border-[#2a389b]/40 flex items-center gap-1.5">
+                    <span class="w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
                     Segurado: {{ segurado.nome }}{% if segurado.cpf %} &bull; CPF: {{ segurado.cpf }}{% endif %}
                 </span>
                 {% endif %}
                 {% if job and job.nome_arquivo %}
-                <span class="font-mono text-[11px] bg-slate-100 text-slate-500 px-2 py-1 rounded-md border border-slate-200 truncate max-w-[200px]" title="{{ job.nome_arquivo }}">
+                <span class="font-mono text-[11px] bg-[#181818] text-zinc-400 px-2.5 py-1 rounded-lg border border-white/[0.06] truncate max-w-[220px]" title="{{ job.nome_arquivo }}">
                     {{ job.nome_arquivo }}
                 </span>
                 {% endif %}
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
+                {% if cliente %}
+                <a href="/analise?cliente_id={{ cliente.id }}"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl shadow-md transition-all">
+                    <span>Ver Análise</span>
+                </a>
+                {% elif job and job.id %}
+                <a href="/analise?job_id={{ job.id }}"
+                   class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl shadow-md transition-all">
+                    <span>Ver Análise</span>
+                </a>
+                {% endif %}
+
                 <button type="button"
                         onclick="copiarTabelaCompetencias(this)"
-                        title="Copiar todas as competências para colar no Excel ou documentos"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer">
-                    <svg class="w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                    </svg>
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#252525] hover:bg-zinc-700 border border-white/10 text-zinc-200 text-xs font-semibold rounded-xl transition-all cursor-pointer">
                     <span>Copiar Dados</span>
                 </button>
 
                 {% if cliente %}
                 <a href="/cnis/clientes/{{ cliente.id }}/csv"
                    download
-                   title="Exportar todas as contribuições consolidadas do cliente"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2a389b] hover:bg-[#1e2978] text-white text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#181818] hover:bg-zinc-800 border border-white/10 text-[#79b5b9] text-xs font-semibold rounded-xl transition-all">
                     <span>Exportar CSV</span>
                 </a>
                 {% elif job and job.id %}
                 <a href="/cnis/jobs/{{ job.id }}/csv"
                    download
-                   title="Exportar arquivo CSV formatado para Excel"
-                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2a389b] hover:bg-[#1e2978] text-white text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
+                   class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#181818] hover:bg-zinc-800 border border-white/10 text-[#79b5b9] text-xs font-semibold rounded-xl transition-all">
                     <span>Exportar CSV</span>
                 </a>
-                {% else %}
-                <button type="button"
-                        onclick="exportarCsvDoDom()"
-                        title="Exportar arquivo CSV formatado para Excel"
-                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#2a389b] hover:bg-[#1e2978] text-white text-xs font-semibold rounded-xl shadow-2xs transition-all cursor-pointer">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span>Exportar CSV</span>
-                </button>
                 {% endif %}
             </div>
         </div>
     </div>
 
     <!-- Tabela de Competências e Remunerações -->
-    <div class="overflow-x-auto max-h-[30rem]">
-        <table class="w-full text-left text-sm text-slate-600">
-            <thead class="bg-slate-50/90 text-slate-600 text-[11px] uppercase tracking-wider font-semibold border-b border-slate-200 sticky top-0 backdrop-blur-xs">
+    <div class="overflow-x-auto max-h-[28rem] p-4">
+        <table class="w-full text-left text-xs text-zinc-300">
+            <thead class="bg-[#252525] text-zinc-400 text-[11px] uppercase tracking-wider font-semibold sticky top-0">
                 <tr>
-                    <th class="px-6 py-3.5">#</th>
-                    <th class="px-6 py-3.5">Mês / Ano da Competência</th>
-                    <th class="px-6 py-3.5 text-right">Remuneração Base (R$)</th>
+                    <th class="px-5 py-3 rounded-l-xl">#</th>
+                    <th class="px-5 py-3">Competência (Mês/Ano)</th>
+                    <th class="px-5 py-3 text-right rounded-r-xl">Remuneração Base (R$)</th>
                 </tr>
             </thead>
-            <tbody id="tabela-competencias-corpo" class="divide-y divide-slate-100 text-xs">
+            <tbody id="tabela-competencias-corpo" class="divide-y divide-white/[0.05]">
                 {% for item in dados %}
-                <tr class="hover:bg-blue-50/20 transition-colors">
-                    <td class="px-6 py-3 text-slate-400 font-mono text-[11px]">{{ loop.index }}</td>
-                    <td class="px-6 py-3 font-mono font-medium text-slate-800 flex items-center gap-2">
-                        <span class="w-1.5 h-1.5 rounded-full bg-[#79b5b9]"></span>
+                <tr class="hover:bg-[#252525]/70 transition-colors">
+                    <td class="px-5 py-3 text-zinc-500 font-mono text-[11px]">{{ loop.index }}</td>
+                    <td class="px-5 py-3 font-mono font-medium text-white flex items-center gap-2">
+                        <span class="w-1.5 h-1.5 rounded-full bg-[#2a389b]"></span>
                         {{ item.data_competencia }}
                     </td>
-                    <td class="px-6 py-3 text-right font-mono font-semibold text-slate-900">
+                    <td class="px-5 py-3 text-right font-mono font-semibold text-white">
                         R$ {{ "%.2f"|format(item.valor)|replace('.', ',') }}
                     </td>
                 </tr>
@@ -129,29 +180,20 @@
             </tbody>
         </table>
     </div>
-
-    <!-- Rodapé Informativo da Tabela -->
-    <div class="p-4 bg-slate-50/50 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
-        <span>Auditoria: Registro gravado na tabela <code>extractions_logs</code></span>
-        <span class="font-medium text-emerald-700 flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-            Pronto para Liquidação de Sentença ou RMI
-        </span>
-    </div>
 </div>
 
 {% else %}
-<!-- Estado Vazio -->
-<div class="bg-[#faf6f0] border border-[#e8d5b5] text-amber-900 p-5 rounded-2xl shadow-sm flex items-start gap-3.5 animate-fadeIn">
-    <div class="w-9 h-9 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+<!-- Estado Vazio em Modo Escuro -->
+<div class="bg-[#1e1e1e] border border-amber-500/30 text-amber-200 p-5 rounded-[20px] shadow-lg flex items-start gap-3.5">
+    <div class="w-9 h-9 rounded-xl bg-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
     </div>
     <div>
-        <h3 class="text-sm font-bold text-amber-900">Nenhum Registro de Remuneração Encontrado</h3>
-        <p class="text-xs text-amber-800 mt-1 leading-relaxed">
-            O arquivo PDF foi analisado com sucesso, porém não foram localizadas linhas de remuneração no layout do extrato previdenciário CNIS. Verifique se o arquivo enviado não foi gerado a partir de uma digitalização escaneada sem OCR.
+        <h3 class="text-sm font-bold text-white">Nenhum Registro de Remuneração Encontrado</h3>
+        <p class="text-xs text-zinc-400 mt-1 leading-relaxed">
+            O documento PDF foi processado, mas não foram localizadas competências no formato padrão do CNIS. Verifique se o PDF possui texto selecionável.
         </p>
     </div>
 </div>

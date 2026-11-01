@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ParseApp — Estatísticas e Análise do CNIS</title>
+    <link rel="icon" type="image/png" href="/static/images/favicon.png">
+    <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    <script src="/static/js/htmx.min.js"></script>
+</head>
+<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
+
+    <!-- Sidebar Fixa e Padronizada à Esquerda (Idêntica à Tela de Dashboard) -->
+    <aside class="w-64 shrink-0 bg-[#181818] border-r border-white/[0.06] flex flex-col justify-between min-h-screen sticky top-0 h-screen px-4 py-6 select-none">
+
+        <div class="space-y-8">
+            <a href="/dashboard" class="flex items-center gap-3 px-3">
+                <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
+                <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
+            </a>
+
+            <nav class="space-y-1.5">
+                <a href="/dashboard"
+                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
+                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                        </svg>
+                    </span>
+                    <span>Dashboard</span>
+                </a>
+
+                <a href="/analise"
+                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#252525] text-white font-semibold text-xs border border-white/[0.06] shadow-sm">
+                    <span class="w-7 h-7 rounded-lg bg-[#2a389b] text-white flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </span>
+                    <span>Análise e Estatísticas</span>
+                </a>
+            </nav>
+        </div>
+
+        <!-- Rodapé da Sidebar: Configurações da Conta e Logout -->
+        <div class="space-y-2 pt-4 border-t border-white/[0.06]">
+            <button type="button"
+                    onclick="document.getElementById('modal-perfil').showModal()"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Configurações do Perfil</span>
+            </button>
+
+            <a href="/auth/logout"
+               title="Encerrar sessão"
+               class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 font-medium text-xs transition-colors">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Sair</span>
+            </a>
+        </div>
+    </aside>
+
+    <!-- Conteúdo Principal -->
+    <div class="flex-1 flex flex-col min-w-0">
+
+        <!-- Header Superior: Busca, Seletor de Segurado e Avatar Clicável -->
+        <header class="h-18 px-6 lg:px-10 py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4">
+
+            <!-- Barra de Busca de Competências -->
+            <div class="relative w-full max-w-md">
+                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                </span>
+                <input type="search"
+                       id="filtro-competencia"
+                       oninput="filtrarTabelaCompetencias(this.value)"
+                       placeholder="Filtrar por competência (ex: 07/2021, 2023) ou valor..."
+                       class="w-full pl-10 pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
+            </div>
+
+            <!-- Controles à Direita: Seletor de Segurado e Perfil -->
+            <div class="flex items-center gap-3 shrink-0">
+                <!-- Seletor de Cliente Analisado -->
+                <div class="flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-xl">
+                    <svg class="w-4 h-4 text-[#79b5b9] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    <select aria-label="Selecionar segurado para análise"
+                            onchange="if(this.value) window.location.href='/analise?cliente_id=' + this.value"
+                            class="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2">
+                        {% if clientes and clientes|length > 0 %}
+                            {% for c in clientes %}
+                            <option value="{{ c.id }}"
+                                    class="bg-[#1e1e1e] text-white"
+                                    {% if cliente_ativo and cliente_ativo.id == c.id %}selected{% endif %}>
+                                {{ c.nome }} ({{ c.contribuicoes|length }} comp.)
+                            </option>
+                            {% endfor %}
+                        {% else %}
+                            <option value="" class="bg-[#1e1e1e] text-zinc-400">Nenhum segurado selecionado</option>
+                        {% endif %}
+                    </select>
+                </div>
+
+                <button type="button"
+                        onclick="document.getElementById('modal-perfil').showModal()"
+                        title="Clique para alterar foto, nome ou senha"
+                        class="flex items-center gap-3 group cursor-pointer text-left rounded-full p-1 pr-2 hover:bg-[#1e1e1e] transition-colors">
+                    <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
+                        {% if tem_avatar %}
+                        <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
+                        {% else %}
+                        {{ (usuario_nome or usuario_email)[0]|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex flex-col">
+                        <span class="text-xs font-semibold text-white group-hover:text-[#93a3ff] transition-colors">
+                            {{ usuario_nome or 'Advogado(a)' }}
+                        </span>
+                        <span class="text-[10px] text-zinc-500">Editar perfil</span>
+                    </div>
+                </button>
+            </div>
+        </header>
+
+        <!-- Área de Conteúdo: KPIs + Gráficos + Tabela -->
+        <main class="p-6 lg:p-10 space-y-6 max-w-7xl w-full mx-auto">
+
+            <!-- Linha 1: 4 Cartões de KPIs -->
+            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+                <!-- KPI 1: Remuneração Média -->
+                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-medium text-zinc-400">Remuneração Média</span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                            </svg>
+                            {{ "%+.1f"|format(painel.variacao_geral_pct) }}%
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                        <span class="text-[#2a389b] font-sans font-extrabold mr-0.5">R$</span>{{ painel.media_salarial|moeda_br }}
+                    </div>
+                    <p class="text-[11px] text-zinc-500 font-mono">
+                        De {{ painel.periodo_inicio }} até {{ painel.periodo_fim }}
+                    </p>
+                </div>
+
+                <!-- KPI 2: Total de Competências / Vínculos -->
+                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-medium text-zinc-400">Total de Vínculos / Meses</span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                            {{ painel.tempo_contribuicao }}
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                        {{ painel.total_competencias }}
+                    </div>
+                    <p class="text-[11px] text-zinc-500">
+                        Competências auditadas no CNIS
+                    </p>
+                </div>
+
+                <!-- KPI 3: Teto Previdenciário Atingido -->
+                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-medium text-zinc-400">Teto Previdenciário Atingido</span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                            {{ "%.1f"|format(painel.percentual_teto_medio) }}%
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                        {{ painel.atingiu_teto_count }} <span class="text-sm font-sans font-normal text-zinc-400">comp.</span>
+                    </div>
+                    <p class="text-[11px] text-zinc-500 font-mono">
+                        Pico: R$ {{ painel.maior_remuneracao|moeda_br }} ({{ painel.competencia_maior }})
+                    </p>
+                </div>
+
+                <!-- KPI 4: Total de Clientes / Base Consolidada -->
+                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
+                    <div class="flex items-center justify-between gap-2">
+                        <span class="text-xs font-medium text-zinc-400">Total de Clientes</span>
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                            {{ total_extracos }} PDFs
+                        </span>
+                    </div>
+                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                        {{ clientes|length }}
+                    </div>
+                    <p class="text-[11px] text-zinc-500 font-mono">
+                        Soma: R$ {{ painel.soma_remuneracoes|moeda_br }}
+                    </p>
+                </div>
+
+            </section>
+
+            <!-- Linha 2: Densidade Contributiva (Esquerda) e Gráfico Interativo de Variação Salarial (Direita) -->
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+
+                <!-- Card Esquerdo (5 colunas): Mapa de Densidade Contributiva por Período -->
+                <div class="lg:col-span-5 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] flex flex-col justify-between space-y-5">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Densidade Contributiva</h2>
+                            <p class="text-[11px] text-zinc-400">Recolhimentos mensais e faixas salariais</p>
+                        </div>
+
+                        <div class="flex items-center gap-2 text-[10px] text-zinc-400">
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-[#252525]"></span> Lacuna
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-[#2a389b]/50"></span> Base
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span> Média
+                            </span>
+                            <span class="inline-flex items-center gap-1">
+                                <span class="w-2 h-2 rounded-full bg-[#79b5b9]"></span> Teto
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Matriz de Células (Anos x 12 Meses) -->
+                    <div class="space-y-2 overflow-x-auto">
+                        {% for linha in painel.mapa_calor %}
+                        <div class="flex items-center gap-2">
+                            <span class="w-10 text-[11px] font-mono text-zinc-400 shrink-0">{{ linha.ano }}</span>
+                            <div class="grid grid-cols-12 gap-1.5 flex-1 min-w-[260px]">
+                                {% for cel in linha.celulas %}
+                                <div title="{{ cel.competencia }}: R$ {{ cel.valor|moeda_br }}"
+                                     class="h-6 rounded-md transition-transform hover:scale-110
+                                     {% if cel.nivel == 4 %}bg-[#4f63e8] border border-[#79b5b9]/60
+                                     {% elif cel.nivel == 3 %}bg-[#2a389b]
+                                     {% elif cel.nivel == 2 %}bg-[#2a389b]/60
+                                     {% elif cel.nivel == 1 %}bg-[#2a389b]/30
+                                     {% else %}bg-[#252525]/80{% endif %}">
+                                </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        {% endfor %}
+
+                        <div class="flex items-center gap-2 pt-1">
+                            <span class="w-10 shrink-0"></span>
+                            <div class="grid grid-cols-12 gap-1.5 flex-1 min-w-[260px] text-center">
+                                {% for m in meses_labels %}
+                                <span class="text-[9px] font-mono text-zinc-500">{{ m }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Card Direito (7 colunas): Gráfico Interativo de Linhas de Evolução Salarial -->
+                <div class="lg:col-span-7 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] flex flex-col justify-between space-y-4">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Evolução e Variação Salarial</h2>
+                            <p class="text-[11px] text-zinc-400">
+                                {% if cliente_ativo %}
+                                    Segurado: <strong class="text-zinc-200">{{ cliente_ativo.nome }}</strong> &bull; Passe o mouse sobre o gráfico para inspecionar
+                                {% else %}
+                                    Passe o mouse ao longo da curva para inspecionar cada competência
+                                {% endif %}
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-4 text-xs">
+                            <span class="inline-flex items-center gap-1.5 text-zinc-300">
+                                <span class="w-3 h-0.5 bg-[#2a389b] inline-block"></span>
+                                Remuneração
+                            </span>
+                            <span class="inline-flex items-center gap-1.5 text-zinc-400">
+                                <span class="w-3 h-0.5 bg-[#79b5b9] inline-block"></span>
+                                Média (R$ {{ painel.media_salarial|moeda_br }})
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Gráfico SVG Interativo ao Passar o Mouse -->
+                    <div class="relative w-full pt-2">
+                        <svg id="svg-evolucao-cnis" viewBox="0 0 720 250" class="w-full h-56 overflow-visible select-none">
+                            <defs>
+                                <linearGradient id="gradienteAzulCnis" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="0%" stop-color="#2a389b" stop-opacity="0.45"/>
+                                    <stop offset="100%" stop-color="#2a389b" stop-opacity="0.0"/>
+                                </linearGradient>
+                            </defs>
+
+                            <!-- Linhas Horizontais de Grade e Eixo Y -->
+                            {% for val_y in painel.grafico.eixo_y_valores %}
+                            {% set pos_y = 30 + loop.index0 * 45 %}
+                            <line x1="50" y1="{{ pos_y }}" x2="680" y2="{{ pos_y }}" stroke="rgba(255,255,255,0.06)" stroke-width="1"/>
+                            <text x="42" y="{{ pos_y + 4 }}" text-anchor="end" fill="#71717a" font-size="10" font-family="monospace">
+                                {{ (val_y / 1000)|round(1) }}k
+                            </text>
+                            {% endfor %}
+
+                            {% if painel.grafico.pontos and painel.grafico.pontos|length > 0 %}
+                                <!-- Área Sombreada sob a Curva Salarial -->
+                                <path d="{{ painel.grafico.caminho_area }}" fill="url(#gradienteAzulCnis)"/>
+
+                                <!-- Linha Complementar Fria: Média Salarial do Período -->
+                                <line x1="50"
+                                      y1="{{ painel.grafico.y_media }}"
+                                      x2="670"
+                                      y2="{{ painel.grafico.y_media }}"
+                                      stroke="#79b5b9"
+                                      stroke-width="1.75"
+                                      stroke-dasharray="5 4"
+                                      opacity="0.75"/>
+
+                                <!-- Curva Principal em Azul #2a389b -->
+                                <path d="{{ painel.grafico.caminho_linha }}"
+                                      fill="none"
+                                      stroke="#2a389b"
+                                      stroke-width="3"
+                                      stroke-linecap="round"/>
+
+                                <!-- Linha de Brilho Superior Suave para Alto Contraste -->
+                                <path d="{{ painel.grafico.caminho_linha }}"
+                                      fill="none"
+                                      stroke="#586ae2"
+                                      stroke-width="1.5"
+                                      stroke-linecap="round"/>
+
+                                <!-- Pontos Discretos na Curva -->
+                                {% for pt in painel.grafico.pontos %}
+                                <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="2.5" fill="#586ae2" opacity="0.65"/>
+                                {% endfor %}
+
+                                <!-- Ponteiro Dinâmico (Inicia no Pico e acompanha o Mouse) -->
+                                {% set inicial = painel.grafico.pico_ponto or painel.grafico.pontos[-1] %}
+                                <line id="grafico-linha-guia"
+                                      x1="{{ inicial.x }}" y1="25" x2="{{ inicial.x }}" y2="210"
+                                      stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="4 4"/>
+                                <circle id="grafico-ponto-ativo"
+                                        cx="{{ inicial.x }}" cy="{{ inicial.y }}" r="5.5"
+                                        fill="#2a389b" stroke="#ffffff" stroke-width="2"/>
+                                <circle id="grafico-ponto-media"
+                                        cx="{{ inicial.x }}" cy="{{ painel.grafico.y_media }}" r="4"
+                                        fill="#79b5b9" stroke="#1e1e1e" stroke-width="2"/>
+
+                                <!-- Tooltip Flutuante Escuro Dinâmico -->
+                                {% set box_x = (inicial.x - 148) if inicial.x > 520 else (inicial.x + 12) %}
+                                {% set box_y = (inicial.y + 10) if inicial.y < 120 else (inicial.y - 68) %}
+                                <g id="grafico-tooltip-box" transform="translate({{ box_x }}, {{ box_y }})" class="pointer-events-none">
+                                    <rect x="0" y="0" width="142" height="58" rx="10" fill="#141416" stroke="rgba(255,255,255,0.12)"/>
+                                    <text id="grafico-tooltip-comp" x="10" y="17" fill="#e4e4e7" font-size="9.5" font-weight="bold">
+                                        Comp. {{ inicial.competencia }}
+                                    </text>
+                                    <circle cx="14" cy="31" r="3" fill="#2a389b"/>
+                                    <text x="22" y="34" fill="#a1a1aa" font-size="9">Salário</text>
+                                    <text id="grafico-tooltip-val" x="132" y="34" text-anchor="end" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold">
+                                        {{ inicial.valor|moeda_br }}
+                                    </text>
+                                    <circle cx="14" cy="46" r="3" fill="#79b5b9"/>
+                                    <text x="22" y="49" fill="#a1a1aa" font-size="9">Média</text>
+                                    <text x="132" y="49" text-anchor="end" fill="#d4d4d8" font-size="9" font-family="monospace">
+                                        {{ painel.media_salarial|moeda_br }}
+                                    </text>
+                                </g>
+
+                                <!-- Rótulos do Eixo X (Competências) -->
+                                {% for pt in painel.grafico.pontos %}
+                                <text x="{{ pt.x }}" y="234" text-anchor="middle" fill="#a1a1aa" font-size="9.5" font-family="monospace">
+                                    {{ pt.competencia }}
+                                </text>
+                                {% endfor %}
+
+                                <!-- Faixas Invisíveis de Captura de Hover para Cada Ponto da Série -->
+                                {% set col_w = (620 / (painel.grafico.pontos|length)) if (painel.grafico.pontos|length) > 0 else 60 %}
+                                {% for pt in painel.grafico.pontos %}
+                                <rect x="{{ pt.x - (col_w / 2) }}"
+                                      y="15"
+                                      width="{{ col_w }}"
+                                      height="215"
+                                      fill="transparent"
+                                      class="cursor-crosshair"
+                                      onmouseenter="destacarPontoGrafico({{ pt.x }}, {{ pt.y }}, '{{ pt.competencia }}', '{{ pt.valor|moeda_br }}')"/>
+                                {% endfor %}
+                            {% else %}
+                                <text x="365" y="125" text-anchor="middle" fill="#71717a" font-size="12">
+                                    Envie um extrato CNIS no Dashboard para visualizar a curva salarial.
+                                </text>
+                            {% endif %}
+                        </svg>
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- Linha 3: Resumo por Ano Contributivo (Esquerda) e Tabela de Competências Validadas (Direita) -->
+            <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+                <!-- Card Esquerdo (4 colunas): Resumo Anual Contributivo -->
+                <div class="lg:col-span-4 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-5">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Salários por Ano</h2>
+                            <p class="text-[11px] text-zinc-400">Média contributiva anual</p>
+                        </div>
+                        <span class="text-[11px] font-mono text-zinc-400">
+                            {{ painel.resumos_anuais|length }} anos
+                        </span>
+                    </div>
+
+                    {% if painel.resumos_anuais and painel.resumos_anuais|length > 0 %}
+                    <div class="grid grid-cols-2 gap-3">
+                        {% for resumo in painel.resumos_anuais %}
+                        <div class="bg-[#252525] rounded-2xl p-3.5 border border-white/[0.05] space-y-2 hover:border-[#2a389b]/50 transition-colors">
+                            <div class="flex items-center justify-between">
+                                <span class="px-2 py-0.5 rounded-md bg-[#2a389b]/30 text-[#93a3ff] font-mono text-[11px] font-bold">
+                                    {{ resumo.ano }}
+                                </span>
+                                <span class="text-[10px] font-mono text-zinc-400">
+                                    {{ resumo.quantidade_meses }}/12m
+                                </span>
+                            </div>
+                            <p class="text-xs text-zinc-400">Média mensal</p>
+                            <p class="text-sm font-bold text-white font-mono">
+                                R$ {{ resumo.media_valor|moeda_br }}
+                            </p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <div class="p-6 bg-[#252525]/50 rounded-2xl text-center text-xs text-zinc-500">
+                        Sem competências consolidadas para agrupar por ano.
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Card Direito (8 colunas): Tabela de Competências e Remunerações Validadas -->
+                <div id="tabela-competencias-card" class="lg:col-span-8 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-5">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <div>
+                            <h2 class="text-sm font-bold text-white">Competências e Remunerações</h2>
+                            <p class="text-[11px] text-zinc-400">
+                                Histórico previdenciário validado pelo Pydantic ({{ painel.total_competencias }} registros)
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-2">
+                            <button type="button"
+                                    onclick="copiarTabelaAnalise(this)"
+                                    class="px-3 py-1.5 bg-[#252525] hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-white/10 transition-colors cursor-pointer">
+                                <span>Copiar Dados</span>
+                            </button>
+
+                            {% if cliente_ativo %}
+                            <a href="/cnis/clientes/{{ cliente_ativo.id }}/csv"
+                               download
+                               class="px-3 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl transition-colors">
+                                Exportar CSV
+                            </a>
+                            {% elif job_ativo %}
+                            <a href="/cnis/jobs/{{ job_ativo.id }}/csv"
+                               download
+                               class="px-3 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl transition-colors">
+                                Exportar CSV
+                            </a>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if painel.itens_tabela and painel.itens_tabela|length > 0 %}
+                    <div class="overflow-x-auto max-h-[28rem]">
+                        <table class="w-full text-left text-xs text-zinc-300">
+                            <thead class="bg-[#252525] text-zinc-400 text-[10px] uppercase tracking-wider font-semibold sticky top-0">
+                                <tr>
+                                    <th class="px-4 py-3 rounded-l-xl">#</th>
+                                    <th class="px-4 py-3">Competência</th>
+                                    <th class="px-4 py-3 text-right">Remuneração (R$)</th>
+                                    <th class="px-4 py-3 text-right">Variação</th>
+                                    <th class="px-4 py-3 text-right">% Teto INSS</th>
+                                    <th class="px-4 py-3 text-right rounded-r-xl">Ano</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabela-competencias-corpo" class="divide-y divide-white/[0.05]">
+                                {% for item in painel.itens_tabela %}
+                                <tr class="linha-competencia hover:bg-[#252525] transition-colors"
+                                    data-filtro="{{ item.data_competencia|lower }} {{ item.ano }} {{ item.valor|moeda_br }}">
+                                    <td class="px-4 py-3.5 font-mono text-[11px] text-zinc-500">
+                                        {{ item.indice }}
+                                    </td>
+                                    <td class="px-4 py-3.5 font-mono font-semibold text-white">
+                                        {{ item.data_competencia }}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right font-mono font-semibold text-white">
+                                        R$ {{ item.valor|moeda_br }}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right font-mono">
+                                        {% if item.variacao_pct >= 0 %}
+                                        <span class="inline-flex items-center gap-1 text-[#8da2fb] font-semibold">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H8M17 7V16" />
+                                            </svg>
+                                            {{ "%.1f"|format(item.variacao_pct) }}%
+                                        </span>
+                                        {% else %}
+                                        <span class="inline-flex items-center gap-1 text-rose-400 font-semibold">
+                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 7L7 17M7 17H16M7 17V8" />
+                                            </svg>
+                                            {{ "%.1f"|format(item.variacao_pct|abs) }}%
+                                        </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right font-mono text-zinc-300">
+                                        {{ "%.1f"|format(item.percentual_teto) }}%
+                                    </td>
+                                    <td class="px-4 py-3.5 text-right font-mono text-zinc-400">
+                                        {{ item.ano }}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    {% else %}
+                    <div class="p-8 bg-[#252525]/40 rounded-2xl text-center space-y-2">
+                        <p class="text-xs font-semibold text-zinc-300">Nenhuma competência carregada para análise.</p>
+                        <p class="text-[11px] text-zinc-500">
+                            Realize o upload de um extrato CNIS na tela de <a href="/dashboard" class="text-[#93a3ff] underline">Dashboard</a> para visualizar os registros validados.
+                        </p>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Modal de Configurações do Perfil (Foto, Nome e Senha) -->
+    <dialog id="modal-perfil" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto">
+        <div class="p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
+                    Configurações do Perfil
+                </h3>
+                <button type="button"
+                        onclick="document.getElementById('modal-perfil').close()"
+                        class="text-zinc-400 hover:text-white text-xs cursor-pointer px-2 py-1 rounded-lg hover:bg-[#252525]">
+                    Fechar
+                </button>
+            </div>
+
+            <form action="/auth/perfil" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <div class="flex items-center gap-4 p-3.5 bg-[#141414] rounded-2xl border border-white/[0.06]">
+                    <label for="input-foto-perfil" class="relative w-14 h-14 rounded-full bg-[#2a389b] text-white font-bold text-base flex items-center justify-center border-2 border-[#2a389b] overflow-hidden cursor-pointer shrink-0 group">
+                        {% if tem_avatar %}
+                        <img id="preview-avatar-modal" src="/auth/avatar" alt="Avatar" class="w-full h-full object-cover">
+                        {% else %}
+                        <span id="letra-avatar-modal">{{ (usuario_nome or usuario_email)[0]|upper }}</span>
+                        <img id="preview-avatar-modal" src="" alt="Avatar" class="w-full h-full object-cover hidden">
+                        {% endif %}
+                        <span class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-semibold text-white transition-opacity">
+                            Foto
+                        </span>
+                    </label>
+                    <div class="flex-1 min-w-0">
+                        <label for="input-foto-perfil" class="text-xs font-semibold text-white hover:text-[#93a3ff] cursor-pointer block">
+                            Alterar foto de perfil
+                        </label>
+                        <p class="text-[11px] text-zinc-500 mt-0.5">PNG, JPG ou WEBP (até 5 MB)</p>
+                        <input type="file"
+                               name="foto"
+                               id="input-foto-perfil"
+                               accept="image/png,image/jpeg,image/webp"
+                               onchange="previsualizarFotoPerfil(this)"
+                               class="sr-only">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="perfil-nome" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Seu Nome ou Nome do Escritório
+                    </label>
+                    <input type="text"
+                           name="nome"
+                           id="perfil-nome"
+                           value="{{ usuario_nome or '' }}"
+                           required
+                           class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
+                </div>
+
+                <div>
+                    <label for="perfil-senha" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Nova Senha
+                    </label>
+                    <input type="password"
+                           name="nova_senha"
+                           id="perfil-senha"
+                           minlength="6"
+                           placeholder="Deixe em branco para manter a senha atual"
+                           class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
+                </div>
+
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button"
+                            onclick="document.getElementById('modal-perfil').close()"
+                            class="px-4 py-2 bg-[#252525] hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+        function destacarPontoGrafico(x, y, competencia, valorFormatado) {
+            const linhaGuia = document.getElementById('grafico-linha-guia');
+            const pontoAtivo = document.getElementById('grafico-ponto-ativo');
+            const pontoMedia = document.getElementById('grafico-ponto-media');
+            const tooltipBox = document.getElementById('grafico-tooltip-box');
+            const tooltipComp = document.getElementById('grafico-tooltip-comp');
+            const tooltipVal = document.getElementById('grafico-tooltip-val');
+
+            if (linhaGuia) {
+                linhaGuia.setAttribute('x1', x);
+                linhaGuia.setAttribute('x2', x);
+            }
+            if (pontoAtivo) {
+                pontoAtivo.setAttribute('cx', x);
+                pontoAtivo.setAttribute('cy', y);
+            }
+            if (pontoMedia) {
+                pontoMedia.setAttribute('cx', x);
+            }
+            if (tooltipComp) {
+                tooltipComp.textContent = `Comp. ${competencia}`;
+            }
+            if (tooltipVal) {
+                tooltipVal.textContent = valorFormatado;
+            }
+            if (tooltipBox) {
+                const boxX = x > 520 ? (x - 148) : (x + 12);
+                const boxY = y < 120 ? (y + 10) : (y - 68);
+                tooltipBox.setAttribute('transform', `translate(${boxX}, ${boxY})`);
+            }
+        }
+
+        function previsualizarFotoPerfil(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById('preview-avatar-modal');
+                    const letra = document.getElementById('letra-avatar-modal');
+                    if (img && e.target && e.target.result) {
+                        img.src = e.target.result;
+                        img.classList.remove('hidden');
+                    }
+                    if (letra) {
+                        letra.classList.add('hidden');
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function filtrarTabelaCompetencias(termo) {
+            const q = (termo || '').toLowerCase().trim();
+            document.querySelectorAll('.linha-competencia').forEach(tr => {
+                const texto = tr.getAttribute('data-filtro') || '';
+                tr.style.display = (!q || texto.includes(q)) ? '' : 'none';
+            });
+        }
+
+        function copiarTabelaAnalise(buttonEl) {
+            const linhas = ["Competência\tRemuneração (R$)\tVariação\t% Teto INSS"];
+            const tbody = document.getElementById("tabela-competencias-corpo");
+            if (!tbody) return;
+
+            tbody.querySelectorAll("tr").forEach(tr => {
+                if (tr.style.display === 'none') return;
+                const cols = tr.querySelectorAll("td");
+                if (cols.length >= 5) {
+                    const comp = cols[1].innerText.trim();
+                    const val = cols[2].innerText.replace("R$", "").trim();
+                    const varPct = cols[3].innerText.trim();
+                    const tetoPct = cols[4].innerText.trim();
+                    linhas.push(`${comp}\t${val}\t${varPct}\t${tetoPct}`);
+                }
+            });
+
+            const texto = linhas.join("\n");
+            const span = buttonEl.querySelector("span");
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(texto).then(() => {
+                    if (span) {
+                        const original = span.textContent;
+                        span.textContent = "Copiado!";
+                        setTimeout(() => { span.textContent = original; }, 2000);
+                    }
+                });
+            }
+        }
+    </script>
+</body>
+</html>

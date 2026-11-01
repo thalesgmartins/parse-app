@@ -46,7 +46,7 @@ def processar_job_extracao(
     """
     id_uuid = job_id if isinstance(job_id, uuid.UUID) else uuid.UUID(str(job_id))
     owns_session = db is None
-    session = SessionLocal() if owns_session else db
+    session: Session = SessionLocal() if db is None else db
 
     caminho_arquivo: Path | None = None
 
@@ -65,6 +65,12 @@ def processar_job_extracao(
             )
 
         dados = extrair_dados_pdf(caminho_arquivo)
+        if not dados:
+            raise ValueError(
+                "Nenhuma competência previdenciária encontrada. "
+                "O arquivo enviado não possui tabela de remunerações CNIS."
+            )
+
         nome_segurado, cpf_segurado = extrair_metadados_pdf(caminho_arquivo)
 
         cliente = None
@@ -141,7 +147,7 @@ def processar_proximo_job_pendente(db: Session | None = None) -> bool:
         True se algum job foi processado, False se a fila estiver vazia.
     """
     owns_session = db is None
-    session = SessionLocal() if owns_session else db
+    session: Session = SessionLocal() if db is None else db
 
     try:
         job = obter_proximo_job(session)

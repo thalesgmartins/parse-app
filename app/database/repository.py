@@ -72,6 +72,32 @@ def criar_advogado(
     return advogado
 
 
+def atualizar_perfil_advogado(
+    db: Session,
+    advogado: Advogado,
+    nome: str | None = None,
+    nova_senha: str | None = None,
+) -> Advogado:
+    """Atualiza o nome de exibição e/ou a senha de um advogado existente.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        advogado: Instância do Advogado autenticado.
+        nome: Novo nome de exibição (opcional).
+        nova_senha: Nova senha em texto plano para hash bcrypt (opcional).
+
+    Returns:
+        Instância do Advogado atualizada e sincronizada no banco.
+    """
+    if nome and nome.strip():
+        advogado.nome = nome.strip()
+    if nova_senha and nova_senha.strip():
+        advogado.senha_hash = hash_password(nova_senha.strip())
+    db.commit()
+    db.refresh(advogado)
+    return advogado
+
+
 def criar_cliente(
     db: Session,
     advogado_id: uuid.UUID | str,
@@ -299,7 +325,7 @@ def salvar_ou_atualizar_contribuicoes(
     for data_comp, item in ultimas_leituras.items():
         if data_comp in mapa_existentes:
             contribuicao = mapa_existentes[data_comp]
-            contribuicao.valor = item.valor
+            contribuicao.valor = float(item.valor)
             contribuicao.job_id = j_uuid
             resultado.append(contribuicao)
         else:
@@ -353,18 +379,57 @@ def contar_extracos(
     db: Session,
     advogado_id: uuid.UUID | str,
 ) -> int:
-    """Retorna o total de extrações de CNIS processadas pelo advogado.
+    """Retorna o total de extrações de CNIS válidas processadas pelo advogado.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
         advogado_id: Identificador do advogado.
 
     Returns:
-        Número total de extrações registradas.
+        Número total de extrações concluídas com sucesso.
     """
     id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
-    stmt = select(func.count(LogExtracao.id)).where(LogExtracao.advogado_id == id_uuid)
+    stmt = select(func.count(LogExtracao.id)).where(
+        LogExtracao.advogado_id == id_uuid,
+        LogExtracao.status == "sucesso",
+    )
     return db.scalar(stmt) or 0
+
+
+def limpar_registros_vazios_advogado(
+    db: Session,
+    advogado_id: uuid.UUID | str,
+) -> None:
+    """Corrige jobs concluídos com 0 competências e remove segurados fantasmas.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        advogado_id: Identificador do advogado proprietário.
+    """
+    id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
+    alterou = False
+
+    jobs_vazios = db.scalars(
+        select(JobExtracao).where(
+            JobExtracao.advogado_id == id_uuid,
+            JobExtracao.status == "completed",
+            JobExtracao.total_competencias == 0,
+        )
+    ).all()
+    for j in jobs_vazios:
+        j.status = "failed"
+        j.cliente_id = None
+        j.mensagem_erro = "Nenhuma competência previdenciária encontrada no PDF."
+        alterou = True
+
+    clientes = listar_clientes(db, id_uuid)
+    for c in clientes:
+        if not c.contribuicoes and c.nome.startswith("Segurado ("):
+            db.delete(c)
+            alterou = True
+
+    if alterou:
+        db.commit()
 
 
 def criar_job_extracao(
