@@ -103,7 +103,8 @@ def test_dashboard_renderiza_com_usuario_autenticado(
     assert advogado.email in response.text
     assert "/auth/logout" in response.text
     assert "hx-indicator" in response.text
-    assert "parse-logo-vazada-branca.png" in response.text
+    assert "parse-logo.png" in response.text
+    assert "ParseApp" in response.text
     assert "#121212" in response.text
     assert "#2a389b" in response.text
 
@@ -240,8 +241,35 @@ def test_tela_login_renderiza_mensagem_de_erro_em_modo_escuro() -> None:
     assert response.status_code == 200
     assert "Credenciais invalidas" in response.text
     assert "Automatize a extração de CNIS com precisão" in response.text
-    assert "parse-logo-vazada-branca.png" in response.text
+    assert "parse-logo.png" in response.text
+    assert "ParseApp" in response.text
     assert "#1e1e1e" in response.text
+
+
+def test_atualizar_perfil_e_avatar_do_advogado(
+    client_with_user: tuple[TestClient, Advogado],
+) -> None:
+    """Verifica atualização de nome, senha e upload de foto no perfil."""
+    # Arrange
+    client, _ = client_with_user
+    fake_img = io.BytesIO(b"\x89PNG\r\n\x1a\nfakepngbytes")
+
+    # Act
+    res_post = client.post(
+        "/auth/perfil",
+        data={"nome": "Dra. Helena Previdenciária", "nova_senha": "novasenha123"},
+        files={"foto": ("avatar.png", fake_img, "image/png")},
+        follow_redirects=False,
+    )
+    res_avatar = client.get("/auth/avatar")
+    res_dash = client.get("/dashboard")
+
+    # Assert
+    assert res_post.status_code == 303
+    assert res_avatar.status_code == 200
+    assert res_avatar.content == b"\x89PNG\r\n\x1a\nfakepngbytes"
+    assert "Dra. Helena Previdenciária" in res_dash.text
+    assert "/auth/avatar" in res_dash.text
 
 
 def test_rota_raiz_redireciona_para_login_se_deslogado() -> None:
@@ -268,3 +296,29 @@ def test_rota_raiz_redireciona_para_dashboard_se_autenticado(
     # Assert
     assert response.status_code == 303
     assert response.headers.get("location") == "/dashboard"
+
+
+def test_upload_multiplos_pdfs_em_lote(
+    client_with_user: tuple[TestClient, Advogado],
+) -> None:
+    """Verifica envio simultâneo de múltiplos PDFs no formulário HTMX."""
+    # Arrange
+    client, _ = client_with_user
+    pdf1 = io.BytesIO(b"%PDF-1.4 fake 1")
+    pdf2 = io.BytesIO(b"%PDF-1.4 fake 2")
+
+    # Act
+    response = client.post(
+        "/cnis/extrair-html",
+        files=[
+            ("arquivo", ("segurado_a.pdf", pdf1, "application/pdf")),
+            ("arquivo", ("segurado_b.pdf", pdf2, "application/pdf")),
+        ],
+    )
+
+    # Assert
+    assert response.status_code == 200
+    assert "Processando Lote de Extratos CNIS" in response.text
+    assert "segurado_a.pdf" in response.text
+    assert "segurado_b.pdf" in response.text
+    assert "/cnis/lote?ids=" in response.text
