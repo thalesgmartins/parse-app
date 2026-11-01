@@ -41,9 +41,7 @@ def _calcular_metricas_fila(jobs: list[JobExtracao]) -> dict[str, int]:
     concluidos = sum(1 for j in jobs if j.status == "completed")
     em_fila = sum(1 for j in jobs if j.status in ("pending", "processing"))
     falhas = sum(1 for j in jobs if j.status == "failed")
-    taxa_conclusao = (
-        round((concluidos / total_jobs) * 100) if total_jobs > 0 else 100
-    )
+    taxa_conclusao = round((concluidos / total_jobs) * 100) if total_jobs > 0 else 100
     return {
         "total_jobs": total_jobs,
         "jobs_concluidos": concluidos,
@@ -65,11 +63,7 @@ def _selecionar_dados_analise(
         try:
             job = obter_job_por_id(db, uuid.UUID(job_id_str))
             if job and job.advogado_id == advogado_id:
-                cli = (
-                    obter_cliente_por_id(db, job.cliente_id)
-                    if job.cliente_id
-                    else None
-                )
+                cli = obter_cliente_por_id(db, job.cliente_id) if job.cliente_id else None
                 contribs = (
                     obter_contribuicoes_por_cliente(db, cli.id)
                     if cli

@@ -95,9 +95,7 @@ async def fazer_login(
             )
         raise HTTPException(status_code=401, detail="Email ou senha incorretos.")
 
-    token = create_access_token(
-        data={"sub": str(advogado.id), "email": advogado.email}
-    )
+    token = create_access_token(data={"sub": str(advogado.id), "email": advogado.email})
 
     redirect_response = RedirectResponse(url="/dashboard", status_code=303)
     redirect_response.set_cookie(
@@ -143,9 +141,7 @@ async def cadastrar_advogado(
         raise HTTPException(status_code=400, detail="E-mail já cadastrado.")
 
     advogado = criar_advogado(db, nome=nome, email=email, senha=password)
-    token = create_access_token(
-        data={"sub": str(advogado.id), "email": advogado.email}
-    )
+    token = create_access_token(data={"sub": str(advogado.id), "email": advogado.email})
 
     redirect_response = RedirectResponse(url="/dashboard", status_code=303)
     redirect_response.set_cookie(
@@ -187,9 +183,7 @@ async def obter_usuario_logado(
 
     payload = decode_access_token(access_token)
     if not payload or "sub" not in payload:
-        raise HTTPException(
-            status_code=401, detail="Token inválido ou expirado."
-        )
+        raise HTTPException(status_code=401, detail="Token inválido ou expirado.")
 
     user_id = payload["sub"]
     advogado = obter_advogado_por_id(db, user_id)

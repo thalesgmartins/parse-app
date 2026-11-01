@@ -388,11 +388,7 @@ def contar_extracos(
     Returns:
         Número total de extrações concluídas com sucesso.
     """
-    id_uuid = (
-        advogado_id
-        if isinstance(advogado_id, uuid.UUID)
-        else uuid.UUID(str(advogado_id))
-    )
+    id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
     stmt = select(func.count(LogExtracao.id)).where(
         LogExtracao.advogado_id == id_uuid,
         LogExtracao.status == "sucesso",
@@ -410,11 +406,7 @@ def limpar_registros_vazios_advogado(
         db: Sessão ativa do SQLAlchemy.
         advogado_id: Identificador do advogado proprietário.
     """
-    id_uuid = (
-        advogado_id
-        if isinstance(advogado_id, uuid.UUID)
-        else uuid.UUID(str(advogado_id))
-    )
+    id_uuid = advogado_id if isinstance(advogado_id, uuid.UUID) else uuid.UUID(str(advogado_id))
     alterou = False
 
     jobs_vazios = db.scalars(
@@ -427,9 +419,7 @@ def limpar_registros_vazios_advogado(
     for j in jobs_vazios:
         j.status = "failed"
         j.cliente_id = None
-        j.mensagem_erro = (
-            "Nenhuma competência previdenciária encontrada no PDF."
-        )
+        j.mensagem_erro = "Nenhuma competência previdenciária encontrada no PDF."
         alterou = True
 
     clientes = listar_clientes(db, id_uuid)

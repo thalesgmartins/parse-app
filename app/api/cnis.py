@@ -269,9 +269,7 @@ async def extrair_documento_cnis_html(
         return templates.TemplateResponse(
             request=request,
             name="tabela_resultados.html",
-            context={
-                "erro": f"Erro ao persistir arquivo temporário no volume efêmero: {str(exc)}"
-            },
+            context={"erro": f"Erro ao persistir arquivo temporário no volume efêmero: {str(exc)}"},
         )
 
     job = criar_job_extracao(
@@ -330,9 +328,7 @@ async def obter_progresso_lote_view(
             context={"erro": "Nenhum job encontrado para o lote informado."},
         )
 
-    finalizados = sum(
-        1 for j in jobs_lote if j.status not in ("pending", "processing")
-    )
+    finalizados = sum(1 for j in jobs_lote if j.status not in ("pending", "processing"))
     if finalizados < total:
         pct = max(15, round((finalizados / total) * 100))
         return templates.TemplateResponse(

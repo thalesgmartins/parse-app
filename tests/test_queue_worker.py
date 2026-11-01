@@ -295,9 +295,7 @@ def test_processar_job_pdf_sem_competencias_nao_cria_cliente_e_falha(
 ) -> None:
     """Garante que um PDF sem competências CNIS falhe e não crie segurado fantasma."""
     # Arrange
-    advogado = criar_advogado(
-        db_session, nome="Dr. Filtro", email="filtro@adv.com", senha="senha"
-    )
+    advogado = criar_advogado(db_session, nome="Dr. Filtro", email="filtro@adv.com", senha="senha")
     arquivo_temp = tmp_path / "boleto_qualquer.pdf"
     arquivo_temp.write_bytes(b"%PDF-1.4 fake non-cnis")
 

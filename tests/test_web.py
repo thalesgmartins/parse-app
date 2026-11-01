@@ -49,9 +49,7 @@ def client_with_user() -> Generator[tuple[TestClient, Advogado], None, None]:
     app.dependency_overrides[get_db] = override_get_db
 
     with TestClient(app) as test_client:
-        token = create_access_token(
-            {"sub": str(advogado.id), "email": advogado.email}
-        )
+        token = create_access_token({"sub": str(advogado.id), "email": advogado.email})
         test_client.cookies.set("access_token", token)
         yield test_client, advogado
 
@@ -225,10 +223,7 @@ def test_login_erro_via_navegador_redireciona_para_tela_login(
 
     # Assert
     assert response.status_code == 303
-    assert (
-        response.headers.get("location")
-        == "/login?erro=Email+ou+senha+incorretos."
-    )
+    assert response.headers.get("location") == "/login?erro=Email+ou+senha+incorretos."
 
 
 def test_tela_login_renderiza_mensagem_de_erro_em_modo_escuro() -> None:

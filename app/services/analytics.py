@@ -145,17 +145,13 @@ def _construir_curva_suave(pontos: list[PontoGraficoCnis]) -> tuple[str, str]:
         prox = pontos[idx + 1]
         ctrl_x = (atual.x + prox.x) / 2.0
         comandos.append(
-            f"C {ctrl_x:.1f},{atual.y:.1f} "
-            f"{ctrl_x:.1f},{prox.y:.1f} "
-            f"{prox.x:.1f},{prox.y:.1f}"
+            f"C {ctrl_x:.1f},{atual.y:.1f} {ctrl_x:.1f},{prox.y:.1f} {prox.x:.1f},{prox.y:.1f}"
         )
 
     caminho_linha = " ".join(comandos)
     primeiro_x = pontos[0].x
     ultimo_x = pontos[-1].x
-    caminho_area = (
-        f"{caminho_linha} L {ultimo_x:.1f},220 L {primeiro_x:.1f},220 Z"
-    )
+    caminho_area = f"{caminho_linha} L {ultimo_x:.1f},220 L {primeiro_x:.1f},220 Z"
     return caminho_linha, caminho_area
 
 
@@ -179,10 +175,7 @@ def _gerar_serie_grafico(
     if total <= max_pontos:
         amostra = list(contribuicoes)
     else:
-        indices = {
-            round(i * (total - 1) / (max_pontos - 1))
-            for i in range(max_pontos)
-        }
+        indices = {round(i * (total - 1) / (max_pontos - 1)) for i in range(max_pontos)}
         idx_pico = max(range(total), key=lambda i: contribuicoes[i].valor)
         indices.add(idx_pico)
         amostra = [contribuicoes[i] for i in sorted(indices)]
@@ -340,9 +333,7 @@ def construir_painel_analise(
     primeiro_val = contribuicoes[0].valor
     ultimo_val = contribuicoes[-1].valor
     variacao_geral = (
-        ((ultimo_val - primeiro_val) / primeiro_val) * 100.0
-        if primeiro_val > 0
-        else 0.0
+        ((ultimo_val - primeiro_val) / primeiro_val) * 100.0 if primeiro_val > 0 else 0.0
     )
 
     limiar_teto = TETO_INSS_REFERENCIA * 0.80
