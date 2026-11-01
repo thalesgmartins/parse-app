@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.9.0](https://github.com/thalesgmartins/parse-app/compare/v0.8.0...v0.9.0) (2026-11-01)
+
+
+### Features
+
+* **ui:** reestruturacao completa do frontend em modo escuro ([#27](https://github.com/thalesgmartins/parse-app/issues/27)) ([b0d9a72](https://github.com/thalesgmartins/parse-app/commit/b0d9a72de511d39bfd0be6707f8e405feea5d764))
+
 ## [0.8.0](https://github.com/thalesgmartins/parse-app/compare/v0.7.0...v0.8.0) (2026-10-09)
 
 
