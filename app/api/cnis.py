@@ -30,11 +30,13 @@ from app.database.repository import (
     obter_job_por_id,
 )
 from app.database.session import get_db
+from app.services.analytics import formatar_moeda_br
 from app.services.export import gerar_csv_contribuicoes
 from app.services.worker import processar_job_extracao
 
 router = APIRouter(prefix="/cnis", tags=["Processamento CNIS"])
 templates = Jinja2Templates(directory=Path(__file__).resolve().parent.parent / "web" / "templates")
+templates.env.filters["moeda_br"] = formatar_moeda_br
 
 
 def _salvar_arquivo_temporario_com_limite(
