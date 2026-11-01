@@ -9,10 +9,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.api.auth import obter_usuario_logado
+from app.api.auth import obter_usuario_logado, usuario_possui_avatar
 from app.database.models import Cliente, Contribuicao, JobExtracao
 from app.database.repository import (
     contar_extracos,
+    limpar_registros_vazios_advogado,
     listar_clientes,
     listar_jobs_por_advogado,
     obter_cliente_por_id,
@@ -136,6 +137,7 @@ async def renderizar_dashboard(
 
     try:
         usuario = await obter_usuario_logado(access_token=token, db=db)
+        limpar_registros_vazios_advogado(db=db, advogado_id=usuario.id)
         clientes_do_advogado = listar_clientes(db=db, advogado_id=usuario.id)
         total_extracos = contar_extracos(db=db, advogado_id=usuario.id)
         jobs_do_advogado = listar_jobs_por_advogado(
@@ -151,6 +153,7 @@ async def renderizar_dashboard(
                 "clientes": clientes_do_advogado,
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
+                "tem_avatar": usuario_possui_avatar(usuario.id),
                 "total_extracos": total_extracos,
                 "jobs": jobs_do_advogado,
                 "metricas_fila": metricas_fila,
@@ -185,6 +188,7 @@ async def renderizar_analise_cnis(
 
     try:
         usuario = await obter_usuario_logado(access_token=token, db=db)
+        limpar_registros_vazios_advogado(db=db, advogado_id=usuario.id)
         clientes_do_advogado = listar_clientes(db=db, advogado_id=usuario.id)
         total_extracos = contar_extracos(db=db, advogado_id=usuario.id)
         jobs_do_advogado = listar_jobs_por_advogado(
@@ -207,6 +211,7 @@ async def renderizar_analise_cnis(
             context={
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
+                "tem_avatar": usuario_possui_avatar(usuario.id),
                 "clientes": clientes_do_advogado,
                 "jobs": jobs_do_advogado,
                 "total_extracos": total_extracos,
