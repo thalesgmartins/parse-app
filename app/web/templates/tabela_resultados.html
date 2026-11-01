@@ -12,6 +12,67 @@
     </div>
 </div>
 
+{% elif jobs_lote %}
+<!-- Resumo de Processamento em Lote -->
+<div class="bg-[#1e1e1e] border border-white/[0.08] rounded-[20px] p-6 shadow-xl space-y-5">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-white/[0.06]">
+        <div>
+            <h2 class="text-base font-bold text-white">Lote de Extratos Processado</h2>
+            <p class="text-xs text-zinc-400 mt-0.5">
+                {{ jobs_lote|length }} arquivos analisados na fila assíncrona.
+            </p>
+        </div>
+        <div class="flex items-center gap-2">
+            <a href="/dashboard"
+               class="px-3.5 py-2 bg-[#252525] hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-white/10 transition-colors">
+                Atualizar Painel
+            </a>
+            <a href="/analise"
+               class="px-3.5 py-2 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl transition-colors">
+                Abrir Estatísticas
+            </a>
+        </div>
+    </div>
+
+    <div class="space-y-2.5">
+        {% for j in jobs_lote %}
+        <div class="p-3.5 bg-[#252525]/80 rounded-xl border border-white/[0.05] flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <div class="min-w-0">
+                <div class="flex items-center gap-2">
+                    <span class="font-mono font-semibold text-white truncate">{{ j.nome_arquivo }}</span>
+                    {% if j.status == 'completed' %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                        {{ j.total_competencias }} comp.
+                    </span>
+                    {% else %}
+                    <span class="text-[10px] font-semibold px-2 py-0.5 rounded-md bg-rose-500/15 text-rose-300 border border-rose-500/30">
+                        Não é CNIS válido
+                    </span>
+                    {% endif %}
+                </div>
+                {% if j.status == 'failed' and j.mensagem_erro %}
+                <p class="text-[11px] text-rose-300/90 mt-1">{{ j.mensagem_erro }}</p>
+                {% endif %}
+            </div>
+
+            {% if j.status == 'completed' %}
+            <div class="flex items-center gap-2 shrink-0">
+                <a href="/analise?job_id={{ j.id }}"
+                   class="px-3 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-[11px] font-semibold rounded-xl transition-colors">
+                    Ver Análise
+                </a>
+                <a href="/cnis/jobs/{{ j.id }}/csv"
+                   download
+                   class="px-2.5 py-1.5 bg-[#181818] hover:bg-zinc-800 text-[#79b5b9] text-[11px] font-mono font-semibold rounded-xl border border-white/[0.06] transition-colors">
+                    CSV
+                </a>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
 {% elif dados and dados|length > 0 %}
 <!-- Estado de Sucesso em Modo Escuro -->
 <div class="bg-[#1e1e1e] border border-white/[0.08] rounded-[20px] overflow-hidden shadow-xl">
@@ -61,18 +122,12 @@
                 {% if cliente %}
                 <a href="/analise?cliente_id={{ cliente.id }}"
                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl shadow-md transition-all">
-                    <span>Ver Análise e Gráfico</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
+                    <span>Ver Análise</span>
                 </a>
                 {% elif job and job.id %}
                 <a href="/analise?job_id={{ job.id }}"
                    class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl shadow-md transition-all">
-                    <span>Ver Análise e Gráfico</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
+                    <span>Ver Análise</span>
                 </a>
                 {% endif %}
 

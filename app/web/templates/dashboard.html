@@ -10,24 +10,24 @@
     <style>
         .drag-active {
             border-color: #2a389b !important;
-            background-color: rgba(42, 56, 155, 0.18) !important;
-            box-shadow: 0 0 0 3px rgba(42, 56, 155, 0.25);
+            background-color: rgba(42, 56, 155, 0.22) !important;
+            box-shadow: 0 0 0 3px rgba(42, 56, 155, 0.30);
         }
         .hero-card-surface {
-            background: linear-gradient(135deg, rgba(42, 56, 155, 0.28) 0%, rgba(30, 30, 30, 0.96) 55%, rgba(24, 24, 27, 0.98) 100%);
+            background: linear-gradient(135deg, rgba(42, 56, 155, 0.26) 0%, rgba(30, 30, 30, 0.96) 55%, rgba(24, 24, 27, 0.98) 100%);
         }
     </style>
 </head>
-<body class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
+<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
 
-    <!-- Sidebar Fixa à Esquerda (~20% da largura) -->
+    <!-- Sidebar Fixa e Padronizada à Esquerda -->
     <aside class="w-64 shrink-0 bg-[#181818] border-r border-white/[0.06] flex flex-col justify-between min-h-screen sticky top-0 h-screen px-4 py-6 select-none">
 
-        <!-- Topo da Sidebar: Logotipo e Navegação -->
+        <!-- Topo da Sidebar: Ícone Azul + ParseApp por extenso e Navegação Global -->
         <div class="space-y-8">
             <a href="/dashboard" class="flex items-center gap-3 px-3">
                 <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
-                <img src="/static/images/parse-logo-vazada-branca.png" alt="ParseApp" class="h-5 object-contain">
+                <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
             </a>
 
             <nav class="space-y-1.5">
@@ -50,86 +50,36 @@
                     </span>
                     <span>Análise e Estatísticas</span>
                 </a>
-
-                <a href="#secao-fila"
-                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
-                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                    </span>
-                    <span>Fila de Extrações</span>
-                </a>
-
-                <a href="#secao-clientes"
-                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
-                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </span>
-                    <span>Segurados ({{ clientes|length }})</span>
-                </a>
-
-                <button type="button"
-                        onclick="document.getElementById('modal-cliente').showModal()"
-                        class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
-                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-[#79b5b9] flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                        </svg>
-                    </span>
-                    <span>Novo Segurado</span>
-                </button>
             </nav>
         </div>
 
-        <!-- Rodapé da Sidebar: Card de Acesso à Análise e Logout -->
-        <div class="space-y-4">
-            <div class="bg-gradient-to-br from-[#2a389b] to-[#1b2466] rounded-2xl p-4 border border-white/10 shadow-lg space-y-3">
-                <div class="flex items-center justify-between">
-                    <span class="text-[10px] font-bold uppercase tracking-wider text-white/80 bg-black/25 px-2 py-0.5 rounded-md">
-                        Inteligência CNIS
-                    </span>
-                    <span class="w-2 h-2 rounded-full bg-[#79b5b9]"></span>
-                </div>
-                <div>
-                    <p class="text-xs font-bold text-white leading-snug">
-                        Evolução Salarial e Teto Previdenciário
-                    </p>
-                    <p class="text-[11px] text-white/75 mt-1 leading-relaxed">
-                        Visualize curvas de remuneração e lacunas contributivas.
-                    </p>
-                </div>
-                <a href="/analise"
-                   class="w-full py-2 px-3 bg-[#121212]/90 hover:bg-[#121212] text-white text-[11px] font-semibold rounded-xl flex items-center justify-between transition-colors">
-                    <span>Abrir Estatísticas</span>
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                </a>
-            </div>
+        <!-- Rodapé da Sidebar: Configurações da Conta e Logout -->
+        <div class="space-y-2 pt-4 border-t border-white/[0.06]">
+            <button type="button"
+                    onclick="document.getElementById('modal-perfil').showModal()"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Configurações do Perfil</span>
+            </button>
 
-            <div class="pt-3 border-t border-white/[0.06] flex items-center justify-between px-2">
-                <span class="text-[11px] text-zinc-500 truncate max-w-[130px]" title="{{ usuario_email }}">
-                    {{ usuario_email }}
-                </span>
-                <a href="/auth/logout"
-                   title="Encerrar sessão"
-                   class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Sair</span>
-                </a>
-            </div>
+            <a href="/auth/logout"
+               title="Encerrar sessão"
+               class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 font-medium text-xs transition-colors">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Sair</span>
+            </a>
         </div>
     </aside>
 
     <!-- Área Principal Direita -->
     <div class="flex-1 flex flex-col min-w-0">
 
-        <!-- Header Superior: Busca Discreta, Saudação e Avatar -->
+        <!-- Header Superior: Busca Discreta, Saudação e Avatar Clicável -->
         <header class="h-18 px-6 lg:px-10 py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between gap-4">
 
             <!-- Barra de Busca Discreta -->
@@ -142,11 +92,11 @@
                 <input type="search"
                        id="busca-dashboard"
                        oninput="filtrarDashboard(this.value)"
-                       placeholder="Buscar segurado, CPF ou extrato CNIS..."
+                       placeholder="Buscar segurado, CPF ou arquivo CNIS..."
                        class="w-full pl-10 pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
             </div>
 
-            <!-- Indicadores Rápidos, Saudação e Avatar -->
+            <!-- Indicadores Rápidos, Saudação e Botão de Perfil/Avatar -->
             <div class="flex items-center gap-3 sm:gap-4 shrink-0">
                 <div class="hidden md:flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-full text-xs">
                     <span class="w-5 h-5 rounded-full bg-[#2a389b] text-white flex items-center justify-center text-[10px] font-bold">
@@ -157,16 +107,24 @@
                     <span class="text-zinc-400">{{ clientes|length }} segurados</span>
                 </div>
 
-                <div class="hidden sm:flex flex-col text-right">
-                    <span class="text-xs font-semibold text-white">
-                        Olá, {{ usuario_nome or usuario_email }}
-                    </span>
-                    <span class="text-[11px] text-zinc-500">Advocacia Previdenciária</span>
-                </div>
-
-                <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm">
-                    {{ (usuario_nome or usuario_email)[0]|upper }}
-                </div>
+                <button type="button"
+                        onclick="document.getElementById('modal-perfil').showModal()"
+                        title="Clique para alterar foto, nome ou senha"
+                        class="flex items-center gap-3 group cursor-pointer text-left rounded-full p-1 pr-2 hover:bg-[#1e1e1e] transition-colors">
+                    <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
+                        {% if tem_avatar %}
+                        <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
+                        {% else %}
+                        {{ (usuario_nome or usuario_email)[0]|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex flex-col">
+                        <span class="text-xs font-semibold text-white group-hover:text-[#93a3ff] transition-colors">
+                            {{ usuario_nome or 'Advogado(a)' }}
+                        </span>
+                        <span class="text-[10px] text-zinc-500">Editar perfil</span>
+                    </div>
+                </button>
             </div>
         </header>
 
@@ -176,7 +134,7 @@
             <!-- Grande Card Central de Destaque: Upload do PDF CNIS -->
             <section class="hero-card-surface rounded-[22px] p-6 sm:p-8 border border-white/[0.08] shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
 
-                <!-- Coluna Esquerda do Card: Contexto e Resumo Semanal/Geral -->
+                <!-- Coluna Esquerda do Card: Resumo Limpo e Direto -->
                 <div class="lg:col-span-5 space-y-4">
                     <span class="inline-flex items-center gap-2 text-xs font-medium text-[#79b5b9]">
                         <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
@@ -188,24 +146,8 @@
                     </h1>
 
                     <p class="text-xs sm:text-sm text-zinc-400 leading-relaxed">
-                        Envie o arquivo PDF do CNIS. O motor identifica automaticamente o Nome e CPF do segurado, valida as remunerações via Pydantic e consolida o histórico sem duplicidades.
+                        Envie o arquivo PDF do CNIS. O sistema identifica automaticamente o Nome e CPF no cabeçalho do documento, cria o cadastro do segurado e consolida todas as competências sem duplicidades.
                     </p>
-
-                    <div class="pt-2 flex flex-wrap items-center gap-3">
-                        <a href="/analise"
-                           class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-full shadow-md transition-all">
-                            <span>Ver Estatísticas</span>
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 17L17 7M17 7H8M17 7V16" />
-                            </svg>
-                        </a>
-
-                        <button type="button"
-                                onclick="document.getElementById('modal-cliente').showModal()"
-                                class="inline-flex items-center gap-2 px-4 py-2.5 bg-[#252525] hover:bg-[#2d2d2d] text-zinc-200 text-xs font-semibold rounded-full border border-white/10 transition-all cursor-pointer">
-                            <span>Cadastrar Segurado</span>
-                        </button>
-                    </div>
                 </div>
 
                 <!-- Coluna Direita do Card: Dropzone Interativa de Upload PDF -->
@@ -219,23 +161,25 @@
 
                         <div class="flex items-center justify-between">
                             <div>
-                                <h2 class="text-sm font-bold text-white">Upload de Extrato CNIS (.pdf)</h2>
-                                <p class="text-[11px] text-zinc-400">Arraste o documento ou selecione do seu computador</p>
+                                <h2 class="text-sm font-bold text-white">Upload de Extratos CNIS (.pdf)</h2>
+                                <p class="text-[11px] text-zinc-400">Arraste um ou mais documentos PDF ou clique abaixo para selecionar em lote</p>
                             </div>
                             <span class="text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
-                                PDF Nativo
+                                Upload Único ou Lote
                             </span>
                         </div>
 
-                        <!-- Área Drag-and-Drop com Borda Tracejada que fica Azul (#2a389b) -->
+                        <!-- Área Drag-and-Drop com Suporte a Múltiplos Arquivos -->
                         <div id="dropzone"
-                             class="border-2 border-dashed border-zinc-700 hover:border-[#2a389b] rounded-2xl p-6 sm:p-8 text-center bg-[#1e1e1e]/70 hover:bg-[#2a389b]/[0.08] transition-all cursor-pointer relative">
+                             onclick="document.getElementById('arquivo-input').click()"
+                             class="border-2 border-dashed border-zinc-700 hover:border-[#2a389b] rounded-2xl p-6 sm:p-8 text-center bg-[#1e1e1e]/70 hover:bg-[#2a389b]/[0.08] transition-all cursor-pointer relative select-none">
                             <input type="file"
                                    name="arquivo"
                                    id="arquivo-input"
-                                   accept="application/pdf"
+                                   accept="application/pdf,.pdf"
+                                   multiple
                                    required
-                                   class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                   class="sr-only"
                                    onchange="handleFileSelect(this)">
 
                             <div id="dropzone-content" class="flex flex-col items-center justify-center space-y-2.5 pointer-events-none">
@@ -245,15 +189,15 @@
                                     </svg>
                                 </div>
                                 <p class="text-xs sm:text-sm font-semibold text-white">
-                                    Solte o PDF do CNIS aqui ou <span class="text-[#79b5b9] underline underline-offset-4">clique para procurar</span>
+                                    Solte um ou mais PDFs do CNIS aqui ou <span class="text-[#79b5b9] underline underline-offset-4">clique para procurar</span>
                                 </p>
                                 <p class="text-[11px] text-zinc-500">
-                                    Reconhecimento automático de segurado, vínculos e competências mensais
+                                    Você pode enviar vários extratos de diferentes segurados de uma só vez
                                 </p>
                             </div>
 
                             <!-- Estado: Arquivo Selecionado -->
-                            <div id="file-selected" class="hidden flex items-center justify-center gap-3 text-xs text-white font-medium py-3">
+                            <div id="file-selected" class="hidden flex items-center justify-center gap-3 text-xs text-white font-medium py-3 pointer-events-none">
                                 <span class="w-8 h-8 rounded-xl bg-[#2a389b] text-white flex items-center justify-center shrink-0">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -266,23 +210,11 @@
                             </div>
                         </div>
 
-                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1">
-                            <!-- Seleção opcional de cliente existente -->
-                            <div class="flex-1">
-                                <select name="cliente_id"
-                                        aria-label="Vincular segurado"
-                                        class="w-full px-3.5 py-2.5 bg-[#1e1e1e] border border-white/10 rounded-xl text-xs text-zinc-300 focus:outline-none focus:border-[#2a389b]">
-                                    <option value="">Detectar segurado automaticamente pelo PDF</option>
-                                    {% for c in clientes %}
-                                    <option value="{{ c.id }}">{{ c.nome }}{% if c.cpf %} ({{ c.cpf }}){% endif %}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-
+                        <div class="pt-1">
                             <button type="submit"
                                     id="btn-extrair"
-                                    class="py-2.5 px-6 bg-[#2a389b] hover:bg-[#3444b8] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#2a389b]/25 transition-all flex items-center justify-center gap-2 cursor-pointer shrink-0">
-                                <span>Iniciar Extração</span>
+                                    class="w-full py-3 px-6 bg-[#2a389b] hover:bg-[#3444b8] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-xs sm:text-sm rounded-xl shadow-lg shadow-[#2a389b]/25 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                                <span>Iniciar Extração do CNIS</span>
                                 <svg id="loading-indicator" class="htmx-indicator animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
@@ -293,16 +225,15 @@
                 </div>
             </section>
 
-            <!-- Container de Status HTMX em Tempo Real / Resultado da Extração -->
+            <!-- Container de Status HTMX em Tempo Real / Resultado Imediato da Extração -->
             <div id="resultado-aqui" class="transition-all"></div>
 
-            <!-- Grid Inferior: Fila de Extrações (Esquerda) e Segurados Cadastrados (Direita) -->
+            <!-- Grid Inferior: Fila de Extrações (Esquerda) e Segurados Ativos (Direita) -->
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
 
-                <!-- Coluna Esquerda (7 colunas): Fila de Processamento e Status via HTMX -->
+                <!-- Coluna Esquerda (7 colunas): Fila de Processamento e Histórico -->
                 <section id="secao-fila" class="lg:col-span-7 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-6">
 
-                    <!-- Cabeçalho com Barra de Progresso Azul (#2a389b) -->
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-white/[0.06]">
                         <div>
                             <span class="text-[11px] font-medium text-zinc-400">Fila de Processamento e Histórico</span>
@@ -320,7 +251,6 @@
                         </div>
                     </div>
 
-                    <!-- Lista de Jobs Processados / Em Fila -->
                     {% if jobs and jobs|length > 0 %}
                     <div class="space-y-3" id="lista-jobs-dashboard">
                         {% for j in jobs %}
@@ -328,7 +258,6 @@
                              data-busca="{{ j.nome_arquivo|lower }} {{ j.cliente.nome|lower if j.cliente else '' }}">
 
                             <div class="flex items-center gap-3.5 min-w-0">
-                                <!-- Ícone Circular com Indicador de Status -->
                                 <div class="relative w-10 h-10 rounded-full bg-[#18181c] border border-[#2a389b]/50 text-[#79b5b9] flex items-center justify-center shrink-0">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
@@ -366,19 +295,19 @@
                                     </div>
 
                                     <p class="text-[11px] text-zinc-400 mt-0.5 truncate">
-                                        {% if j.cliente %}
+                                        {% if j.status == 'failed' %}
+                                            <span class="text-rose-300/90">{{ j.mensagem_erro or 'Documento sem competências CNIS' }}</span>
+                                        {% elif j.cliente %}
                                             Segurado: <strong class="text-zinc-300 font-medium">{{ j.cliente.nome }}</strong>
+                                            &bull; <span class="font-mono">{{ j.total_competencias }} comp.</span>
                                         {% else %}
-                                            Identificação automática
+                                            Identificação automática &bull; <span class="font-mono">{{ j.total_competencias }} comp.</span>
                                         {% endif %}
-                                        &bull;
-                                        <span class="font-mono">{{ j.total_competencias }} comp.</span>
                                         {% if j.created_at %}
                                         &bull; <span class="font-mono text-zinc-500">{{ j.created_at.strftime('%d/%m/%Y %H:%M') }}</span>
                                         {% endif %}
                                     </p>
 
-                                    <!-- Barra de Progresso Individual Azul -->
                                     <div class="w-full max-w-[220px] bg-[#181818] h-1.5 rounded-full mt-2 overflow-hidden">
                                         {% if j.status == 'completed' %}
                                         <div class="bg-[#2a389b] h-1.5 rounded-full w-full"></div>
@@ -391,21 +320,13 @@
                                 </div>
                             </div>
 
-                            <!-- Ações do Job -->
+                            <!-- Ações Enxutas do Extrato -->
                             <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
                                 {% if j.status == 'completed' %}
                                 <a href="/analise?job_id={{ j.id }}"
                                    class="px-3 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-[11px] font-semibold rounded-xl transition-colors">
-                                    Estatísticas
+                                    Ver Análise
                                 </a>
-                                <button type="button"
-                                        hx-get="/cnis/jobs/{{ j.id }}"
-                                        hx-target="#resultado-aqui"
-                                        hx-swap="innerHTML"
-                                        onclick="document.getElementById('resultado-aqui').scrollIntoView({behavior: 'smooth'})"
-                                        class="px-2.5 py-1.5 bg-[#1e1e1e] hover:bg-zinc-800 text-zinc-300 text-[11px] font-semibold rounded-xl border border-white/10 transition-colors cursor-pointer">
-                                    Tabela
-                                </button>
                                 <a href="/cnis/jobs/{{ j.id }}/csv"
                                    download
                                    class="px-2.5 py-1.5 bg-[#1e1e1e] hover:bg-zinc-800 text-[#79b5b9] text-[11px] font-mono font-semibold rounded-xl border border-white/10 transition-colors">
@@ -432,19 +353,17 @@
                     {% endif %}
                 </section>
 
-                <!-- Coluna Direita (5 colunas): Segurados e Histórico Consolidado -->
+                <!-- Coluna Direita (5 colunas): Segurados Identificados Automaticamente -->
                 <section id="secao-clientes" class="lg:col-span-5 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-5">
 
                     <div class="flex items-center justify-between pb-4 border-b border-white/[0.06]">
                         <div>
-                            <span class="text-[11px] font-medium text-zinc-400">Carteira do Escritório</span>
-                            <h2 class="text-lg font-bold text-white mt-0.5">Segurados Ativos</h2>
+                            <span class="text-[11px] font-medium text-zinc-400">Carteira Consolidada</span>
+                            <h2 class="text-lg font-bold text-white mt-0.5">Segurados Identificados</h2>
                         </div>
-                        <button type="button"
-                                onclick="document.getElementById('modal-cliente').showModal()"
-                                class="text-xs font-semibold text-[#79b5b9] hover:text-white transition-colors cursor-pointer">
-                            + Novo Segurado
-                        </button>
+                        <span class="text-xs font-mono text-zinc-400 bg-[#252525] px-2.5 py-1 rounded-lg border border-white/[0.05]">
+                            {{ clientes|length }} ativos
+                        </span>
                     </div>
 
                     {% if clientes and clientes|length > 0 %}
@@ -473,20 +392,10 @@
                             </div>
 
                             <div class="flex items-center justify-between pt-2 border-t border-white/[0.05]">
-                                <div class="flex items-center gap-1.5">
-                                    <a href="/analise?cliente_id={{ c.id }}"
-                                       class="px-3 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-[11px] font-semibold rounded-xl transition-colors">
-                                        Analisar CNIS
-                                    </a>
-                                    <button type="button"
-                                            hx-get="/cnis/clientes/{{ c.id }}/tabela"
-                                            hx-target="#resultado-aqui"
-                                            hx-swap="innerHTML"
-                                            onclick="document.getElementById('resultado-aqui').scrollIntoView({behavior: 'smooth'})"
-                                            class="px-2.5 py-1.5 bg-[#1e1e1e] hover:bg-zinc-800 text-zinc-300 text-[11px] font-semibold rounded-xl border border-white/10 transition-colors cursor-pointer">
-                                        Visualizar
-                                    </button>
-                                </div>
+                                <a href="/analise?cliente_id={{ c.id }}"
+                                   class="px-3.5 py-1.5 bg-[#2a389b] hover:bg-[#3444b8] text-white text-[11px] font-semibold rounded-xl transition-colors">
+                                    Ver Análise
+                                </a>
 
                                 <a href="/cnis/clientes/{{ c.id }}/csv"
                                    download
@@ -500,8 +409,8 @@
                     </div>
                     {% else %}
                     <div class="text-center py-10 px-4 bg-[#181818] rounded-2xl border border-white/[0.04]">
-                        <p class="text-xs font-medium text-zinc-400">Nenhum segurado cadastrado.</p>
-                        <p class="text-[11px] text-zinc-500 mt-1">Os segurados são criados automaticamente ao enviar um PDF do CNIS.</p>
+                        <p class="text-xs font-medium text-zinc-400">Nenhum segurado registrado.</p>
+                        <p class="text-[11px] text-zinc-500 mt-1">Os segurados são cadastrados automaticamente na leitura do PDF do CNIS.</p>
                     </div>
                     {% endif %}
                 </section>
@@ -511,48 +420,82 @@
         </main>
     </div>
 
-    <!-- Modal em Modo Escuro para Cadastro Rápido de Segurado -->
-    <dialog id="modal-cliente" class="rounded-2xl p-0 backdrop:bg-black/70 bg-transparent shadow-2xl max-w-md w-full m-auto">
+    <!-- Modal de Configurações do Perfil (Foto, Nome e Senha) -->
+    <dialog id="modal-perfil" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto">
         <div class="p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
-                    Cadastrar Novo Segurado
+                    Configurações do Perfil
                 </h3>
                 <button type="button"
-                        onclick="document.getElementById('modal-cliente').close()"
-                        class="text-zinc-400 hover:text-white text-sm cursor-pointer px-2">
+                        onclick="document.getElementById('modal-perfil').close()"
+                        class="text-zinc-400 hover:text-white text-xs cursor-pointer px-2 py-1 rounded-lg hover:bg-[#252525]">
                     Fechar
                 </button>
             </div>
 
-            <form action="/cnis/clientes" method="POST" class="space-y-4">
+            <form action="/auth/perfil" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <!-- Seletor de Foto de Perfil -->
+                <div class="flex items-center gap-4 p-3.5 bg-[#141414] rounded-2xl border border-white/[0.06]">
+                    <label for="input-foto-perfil" class="relative w-14 h-14 rounded-full bg-[#2a389b] text-white font-bold text-base flex items-center justify-center border-2 border-[#2a389b] overflow-hidden cursor-pointer shrink-0 group">
+                        {% if tem_avatar %}
+                        <img id="preview-avatar-modal" src="/auth/avatar" alt="Avatar" class="w-full h-full object-cover">
+                        {% else %}
+                        <span id="letra-avatar-modal">{{ (usuario_nome or usuario_email)[0]|upper }}</span>
+                        <img id="preview-avatar-modal" src="" alt="Avatar" class="w-full h-full object-cover hidden">
+                        {% endif %}
+                        <span class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-semibold text-white transition-opacity">
+                            Foto
+                        </span>
+                    </label>
+                    <div class="flex-1 min-w-0">
+                        <label for="input-foto-perfil" class="text-xs font-semibold text-white hover:text-[#93a3ff] cursor-pointer block">
+                            Alterar foto de perfil
+                        </label>
+                        <p class="text-[11px] text-zinc-500 mt-0.5">PNG, JPG ou WEBP (até 5 MB)</p>
+                        <input type="file"
+                               name="foto"
+                               id="input-foto-perfil"
+                               accept="image/png,image/jpeg,image/webp"
+                               onchange="previsualizarFotoPerfil(this)"
+                               class="sr-only">
+                    </div>
+                </div>
+
                 <div>
-                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">Nome Completo do Segurado</label>
+                    <label for="perfil-nome" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Seu Nome ou Nome do Escritório
+                    </label>
                     <input type="text"
                            name="nome"
-                           placeholder="Ex: Maria Aparecida dos Santos"
+                           id="perfil-nome"
+                           value="{{ usuario_nome or '' }}"
                            required
                            class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
                 </div>
 
                 <div>
-                    <label class="block text-xs font-medium text-zinc-400 mb-1.5">CPF (Opcional)</label>
-                    <input type="text"
-                           name="cpf"
-                           placeholder="000.000.000-00"
-                           class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white font-mono placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
+                    <label for="perfil-senha" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Nova Senha
+                    </label>
+                    <input type="password"
+                           name="nova_senha"
+                           id="perfil-senha"
+                           minlength="6"
+                           placeholder="Deixe em branco para manter a senha atual"
+                           class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
                 </div>
 
                 <div class="flex justify-end gap-2.5 pt-2">
                     <button type="button"
-                            onclick="document.getElementById('modal-cliente').close()"
+                            onclick="document.getElementById('modal-perfil').close()"
                             class="px-4 py-2 bg-[#252525] hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl cursor-pointer">
                         Cancelar
                     </button>
                     <button type="submit"
                             class="px-4 py-2 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md">
-                        Salvar Segurado
+                        Salvar Alterações
                     </button>
                 </div>
             </form>
@@ -560,18 +503,41 @@
     </dialog>
 
     <script>
+        /* Previne que o navegador abra o PDF em outra aba ao arrastar e soltar */
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            window.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+            }, false);
+        });
+
         const dropzoneEl = document.getElementById('dropzone');
-        if (dropzoneEl) {
+        const arquivoInputEl = document.getElementById('arquivo-input');
+
+        if (dropzoneEl && arquivoInputEl) {
             ['dragenter', 'dragover'].forEach(evt => {
                 dropzoneEl.addEventListener(evt, (e) => {
                     e.preventDefault();
+                    e.stopPropagation();
                     dropzoneEl.classList.add('drag-active');
                 });
             });
-            ['dragleave', 'drop'].forEach(evt => {
-                dropzoneEl.addEventListener(evt, () => {
-                    dropzoneEl.classList.remove('drag-active');
-                });
+
+            dropzoneEl.addEventListener('dragleave', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneEl.classList.remove('drag-active');
+            });
+
+            dropzoneEl.addEventListener('drop', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                dropzoneEl.classList.remove('drag-active');
+
+                if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                    arquivoInputEl.files = e.dataTransfer.files;
+                    handleFileSelect(arquivoInputEl);
+                }
             });
         }
 
@@ -581,16 +547,47 @@
             const fileName = document.getElementById('file-name');
             const fileSize = document.getElementById('file-size');
 
-            if (input.files && input.files[0]) {
-                const file = input.files[0];
+            if (input.files && input.files.length > 0) {
                 dropContent.classList.add('hidden');
                 fileSelected.classList.remove('hidden');
-                fileName.textContent = file.name;
-                const sizeKB = (file.size / 1024).toFixed(1);
-                fileSize.textContent = `${sizeKB} KB`;
+
+                if (input.files.length === 1) {
+                    const file = input.files[0];
+                    fileName.textContent = file.name;
+                    const sizeKB = (file.size / 1024).toFixed(1);
+                    fileSize.textContent = `${sizeKB} KB`;
+                } else {
+                    let totalBytes = 0;
+                    const nomes = [];
+                    for (let i = 0; i < input.files.length; i++) {
+                        totalBytes += input.files[i].size;
+                        nomes.push(input.files[i].name);
+                    }
+                    const totalKB = (totalBytes / 1024).toFixed(1);
+                    fileName.textContent = `${input.files.length} arquivos PDF selecionados para envio em lote`;
+                    fileSize.textContent = `${totalKB} KB no total (${nomes.slice(0, 3).join(', ')}${nomes.length > 3 ? '...' : ''})`;
+                }
             } else {
                 dropContent.classList.remove('hidden');
                 fileSelected.classList.add('hidden');
+            }
+        }
+
+        function previsualizarFotoPerfil(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById('preview-avatar-modal');
+                    const letra = document.getElementById('letra-avatar-modal');
+                    if (img && e.target && e.target.result) {
+                        img.src = e.target.result;
+                        img.classList.remove('hidden');
+                    }
+                    if (letra) {
+                        letra.classList.add('hidden');
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
             }
         }
 

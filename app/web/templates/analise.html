@@ -8,15 +8,15 @@
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
     <script src="/static/js/htmx.min.js"></script>
 </head>
-<body class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
+<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
 
-    <!-- Sidebar Fixa à Esquerda (Mesma Estrutura da Tela Geral para Consistência) -->
+    <!-- Sidebar Fixa e Padronizada à Esquerda (Idêntica à Tela de Dashboard) -->
     <aside class="w-64 shrink-0 bg-[#181818] border-r border-white/[0.06] flex flex-col justify-between min-h-screen sticky top-0 h-screen px-4 py-6 select-none">
 
         <div class="space-y-8">
             <a href="/dashboard" class="flex items-center gap-3 px-3">
                 <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
-                <img src="/static/images/parse-logo-vazada-branca.png" alt="ParseApp" class="h-5 object-contain">
+                <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
             </a>
 
             <nav class="space-y-1.5">
@@ -39,68 +39,36 @@
                     </span>
                     <span>Análise e Estatísticas</span>
                 </a>
-
-                <a href="/dashboard#secao-fila"
-                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
-                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-                        </svg>
-                    </span>
-                    <span>Extratos ({{ total_extracos }})</span>
-                </a>
-
-                <a href="/dashboard#secao-clientes"
-                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
-                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                        </svg>
-                    </span>
-                    <span>Segurados ({{ clientes|length }})</span>
-                </a>
-
-                <a href="#tabela-competencias-card"
-                   class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
-                    <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M3 14h18m-9-4v8m-7 0h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                        </svg>
-                    </span>
-                    <span>Tabela de Remunerações</span>
-                </a>
             </nav>
         </div>
 
-        <!-- Rodapé da Sidebar -->
-        <div class="space-y-3 pt-4 border-t border-white/[0.06]">
-            <a href="/dashboard"
-               class="flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-medium text-zinc-400 hover:text-white hover:bg-[#1e1e1e] transition-colors">
-                <svg class="w-4 h-4 text-[#2a389b]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        <!-- Rodapé da Sidebar: Configurações da Conta e Logout -->
+        <div class="space-y-2 pt-4 border-t border-white/[0.06]">
+            <button type="button"
+                    onclick="document.getElementById('modal-perfil').showModal()"
+                    class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
+                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>Novo Upload de PDF</span>
-            </a>
+                <span>Configurações do Perfil</span>
+            </button>
 
-            <div class="flex items-center justify-between px-3 pt-2">
-                <span class="text-[11px] text-zinc-500 truncate max-w-[130px]" title="{{ usuario_email }}">
-                    {{ usuario_email }}
-                </span>
-                <a href="/auth/logout"
-                   class="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-400 hover:text-white transition-colors">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                    </svg>
-                    <span>Sair</span>
-                </a>
-            </div>
+            <a href="/auth/logout"
+               title="Encerrar sessão"
+               class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 font-medium text-xs transition-colors">
+                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                <span>Sair</span>
+            </a>
         </div>
     </aside>
 
     <!-- Conteúdo Principal -->
     <div class="flex-1 flex flex-col min-w-0">
 
-        <!-- Header Superior: Busca, Seletor de Segurado e Perfil -->
+        <!-- Header Superior: Busca, Seletor de Segurado e Avatar Clicável -->
         <header class="h-18 px-6 lg:px-10 py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4">
 
             <!-- Barra de Busca de Competências -->
@@ -117,7 +85,7 @@
                        class="w-full pl-10 pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
             </div>
 
-            <!-- Controles à Direita: Seletor de Segurado, Período e Avatar -->
+            <!-- Controles à Direita: Seletor de Segurado e Perfil -->
             <div class="flex items-center gap-3 shrink-0">
                 <!-- Seletor de Cliente Analisado -->
                 <div class="flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-xl">
@@ -141,27 +109,31 @@
                     </select>
                 </div>
 
-                {% if cliente_ativo %}
-                <a href="/cnis/clientes/{{ cliente_ativo.id }}/csv"
-                   download
-                   class="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-2 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl shadow-md transition-colors">
-                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    <span>Exportar CSV</span>
-                </a>
-                {% endif %}
-
-                <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15">
-                    {{ (usuario_nome or usuario_email)[0]|upper }}
-                </div>
+                <button type="button"
+                        onclick="document.getElementById('modal-perfil').showModal()"
+                        title="Clique para alterar foto, nome ou senha"
+                        class="flex items-center gap-3 group cursor-pointer text-left rounded-full p-1 pr-2 hover:bg-[#1e1e1e] transition-colors">
+                    <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
+                        {% if tem_avatar %}
+                        <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
+                        {% else %}
+                        {{ (usuario_nome or usuario_email)[0]|upper }}
+                        {% endif %}
+                    </div>
+                    <div class="hidden sm:flex flex-col">
+                        <span class="text-xs font-semibold text-white group-hover:text-[#93a3ff] transition-colors">
+                            {{ usuario_nome or 'Advogado(a)' }}
+                        </span>
+                        <span class="text-[10px] text-zinc-500">Editar perfil</span>
+                    </div>
+                </button>
             </div>
         </header>
 
         <!-- Área de Conteúdo: KPIs + Gráficos + Tabela -->
         <main class="p-6 lg:p-10 space-y-6 max-w-7xl w-full mx-auto">
 
-            <!-- Linha 1: 4 Cartões de KPIs (Padrão Sales Analytics Dark Mode) -->
+            <!-- Linha 1: 4 Cartões de KPIs -->
             <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
 
                 <!-- KPI 1: Remuneração Média -->
@@ -233,7 +205,7 @@
 
             </section>
 
-            <!-- Linha 2: Densidade Contributiva (Esquerda) e Gráfico de Variação Salarial (Direita) -->
+            <!-- Linha 2: Densidade Contributiva (Esquerda) e Gráfico Interativo de Variação Salarial (Direita) -->
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
                 <!-- Card Esquerdo (5 colunas): Mapa de Densidade Contributiva por Período -->
@@ -244,7 +216,6 @@
                             <p class="text-[11px] text-zinc-400">Recolhimentos mensais e faixas salariais</p>
                         </div>
 
-                        <!-- Legenda de Intensidade em Azul #2a389b -->
                         <div class="flex items-center gap-2 text-[10px] text-zinc-400">
                             <span class="inline-flex items-center gap-1">
                                 <span class="w-2 h-2 rounded-full bg-[#252525]"></span> Lacuna
@@ -281,7 +252,6 @@
                         </div>
                         {% endfor %}
 
-                        <!-- Rótulos dos Meses na Base -->
                         <div class="flex items-center gap-2 pt-1">
                             <span class="w-10 shrink-0"></span>
                             <div class="grid grid-cols-12 gap-1.5 flex-1 min-w-[260px] text-center">
@@ -293,16 +263,16 @@
                     </div>
                 </div>
 
-                <!-- Card Direito (7 colunas): Gráfico de Linhas de Evolução e Variação Salarial -->
+                <!-- Card Direito (7 colunas): Gráfico Interativo de Linhas de Evolução Salarial -->
                 <div class="lg:col-span-7 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] flex flex-col justify-between space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <h2 class="text-sm font-bold text-white">Evolução e Variação Salarial</h2>
                             <p class="text-[11px] text-zinc-400">
                                 {% if cliente_ativo %}
-                                    Segurado: <strong class="text-zinc-200">{{ cliente_ativo.nome }}</strong>
+                                    Segurado: <strong class="text-zinc-200">{{ cliente_ativo.nome }}</strong> &bull; Passe o mouse sobre o gráfico para inspecionar
                                 {% else %}
-                                    Curva histórica de remunerações validadas
+                                    Passe o mouse ao longo da curva para inspecionar cada competência
                                 {% endif %}
                             </p>
                         </div>
@@ -319,9 +289,9 @@
                         </div>
                     </div>
 
-                    <!-- Gráfico SVG Responsivo em Modo Escuro com Azul #2a389b -->
+                    <!-- Gráfico SVG Interativo ao Passar o Mouse -->
                     <div class="relative w-full pt-2">
-                        <svg viewBox="0 0 720 250" class="w-full h-56 overflow-visible">
+                        <svg id="svg-evolucao-cnis" viewBox="0 0 720 250" class="w-full h-56 overflow-visible select-none">
                             <defs>
                                 <linearGradient id="gradienteAzulCnis" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stop-color="#2a389b" stop-opacity="0.45"/>
@@ -366,40 +336,60 @@
                                       stroke-width="1.5"
                                       stroke-linecap="round"/>
 
-                                <!-- Destaque Vertical no Ponto de Pico Salarial + Card Tooltip -->
-                                {% if painel.grafico.pico_ponto %}
-                                {% set pico = painel.grafico.pico_ponto %}
-                                <line x1="{{ pico.x }}" y1="25" x2="{{ pico.x }}" y2="210"
-                                      stroke="rgba(255,255,255,0.22)" stroke-width="1" stroke-dasharray="4 4"/>
-                                <circle cx="{{ pico.x }}" cy="{{ pico.y }}" r="5" fill="#2a389b" stroke="#ffffff" stroke-width="2"/>
-                                <circle cx="{{ pico.x }}" cy="{{ painel.grafico.y_media }}" r="4" fill="#79b5b9" stroke="#1e1e1e" stroke-width="2"/>
+                                <!-- Pontos Discretos na Curva -->
+                                {% for pt in painel.grafico.pontos %}
+                                <circle cx="{{ pt.x }}" cy="{{ pt.y }}" r="2.5" fill="#586ae2" opacity="0.65"/>
+                                {% endfor %}
 
-                                <!-- Tooltip Flutuante Escuro (Estilo Sales Analytics Reference) -->
-                                {% set box_x = (pico.x - 145) if pico.x > 520 else (pico.x + 12) %}
-                                {% set box_y = (pico.y + 10) if pico.y < 120 else (pico.y - 68) %}
-                                <g transform="translate({{ box_x }}, {{ box_y }})">
-                                    <rect x="0" y="0" width="138" height="58" rx="10" fill="#141416" stroke="rgba(255,255,255,0.10)"/>
-                                    <text x="10" y="17" fill="#e4e4e7" font-size="9.5" font-weight="bold">
-                                        Comp. {{ pico.competencia }}
+                                <!-- Ponteiro Dinâmico (Inicia no Pico e acompanha o Mouse) -->
+                                {% set inicial = painel.grafico.pico_ponto or painel.grafico.pontos[-1] %}
+                                <line id="grafico-linha-guia"
+                                      x1="{{ inicial.x }}" y1="25" x2="{{ inicial.x }}" y2="210"
+                                      stroke="rgba(255,255,255,0.25)" stroke-width="1" stroke-dasharray="4 4"/>
+                                <circle id="grafico-ponto-ativo"
+                                        cx="{{ inicial.x }}" cy="{{ inicial.y }}" r="5.5"
+                                        fill="#2a389b" stroke="#ffffff" stroke-width="2"/>
+                                <circle id="grafico-ponto-media"
+                                        cx="{{ inicial.x }}" cy="{{ painel.grafico.y_media }}" r="4"
+                                        fill="#79b5b9" stroke="#1e1e1e" stroke-width="2"/>
+
+                                <!-- Tooltip Flutuante Escuro Dinâmico -->
+                                {% set box_x = (inicial.x - 148) if inicial.x > 520 else (inicial.x + 12) %}
+                                {% set box_y = (inicial.y + 10) if inicial.y < 120 else (inicial.y - 68) %}
+                                <g id="grafico-tooltip-box" transform="translate({{ box_x }}, {{ box_y }})" class="pointer-events-none">
+                                    <rect x="0" y="0" width="142" height="58" rx="10" fill="#141416" stroke="rgba(255,255,255,0.12)"/>
+                                    <text id="grafico-tooltip-comp" x="10" y="17" fill="#e4e4e7" font-size="9.5" font-weight="bold">
+                                        Comp. {{ inicial.competencia }}
                                     </text>
                                     <circle cx="14" cy="31" r="3" fill="#2a389b"/>
                                     <text x="22" y="34" fill="#a1a1aa" font-size="9">Salário</text>
-                                    <text x="128" y="34" text-anchor="end" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold">
-                                        {{ pico.valor|moeda_br }}
+                                    <text id="grafico-tooltip-val" x="132" y="34" text-anchor="end" fill="#ffffff" font-size="9" font-family="monospace" font-weight="bold">
+                                        {{ inicial.valor|moeda_br }}
                                     </text>
                                     <circle cx="14" cy="46" r="3" fill="#79b5b9"/>
                                     <text x="22" y="49" fill="#a1a1aa" font-size="9">Média</text>
-                                    <text x="128" y="49" text-anchor="end" fill="#d4d4d8" font-size="9" font-family="monospace">
+                                    <text x="132" y="49" text-anchor="end" fill="#d4d4d8" font-size="9" font-family="monospace">
                                         {{ painel.media_salarial|moeda_br }}
                                     </text>
                                 </g>
-                                {% endif %}
 
                                 <!-- Rótulos do Eixo X (Competências) -->
                                 {% for pt in painel.grafico.pontos %}
                                 <text x="{{ pt.x }}" y="234" text-anchor="middle" fill="#a1a1aa" font-size="9.5" font-family="monospace">
                                     {{ pt.competencia }}
                                 </text>
+                                {% endfor %}
+
+                                <!-- Faixas Invisíveis de Captura de Hover para Cada Ponto da Série -->
+                                {% set col_w = (620 / (painel.grafico.pontos|length)) if (painel.grafico.pontos|length) > 0 else 60 %}
+                                {% for pt in painel.grafico.pontos %}
+                                <rect x="{{ pt.x - (col_w / 2) }}"
+                                      y="15"
+                                      width="{{ col_w }}"
+                                      height="215"
+                                      fill="transparent"
+                                      class="cursor-crosshair"
+                                      onmouseenter="destacarPontoGrafico({{ pt.x }}, {{ pt.y }}, '{{ pt.competencia }}', '{{ pt.valor|moeda_br }}')"/>
                                 {% endfor %}
                             {% else %}
                                 <text x="365" y="125" text-anchor="middle" fill="#71717a" font-size="12">
@@ -415,7 +405,7 @@
             <!-- Linha 3: Resumo por Ano Contributivo (Esquerda) e Tabela de Competências Validadas (Direita) -->
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-                <!-- Card Esquerdo (4 colunas): Resumo Anual Contributivo (Estilo "Sales by Country") -->
+                <!-- Card Esquerdo (4 colunas): Resumo Anual Contributivo -->
                 <div class="lg:col-span-4 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-5">
                     <div class="flex items-center justify-between">
                         <div>
@@ -555,7 +545,138 @@
         </main>
     </div>
 
+    <!-- Modal de Configurações do Perfil (Foto, Nome e Senha) -->
+    <dialog id="modal-perfil" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto">
+        <div class="p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
+            <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
+                <h3 class="text-sm font-bold text-white flex items-center gap-2">
+                    <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
+                    Configurações do Perfil
+                </h3>
+                <button type="button"
+                        onclick="document.getElementById('modal-perfil').close()"
+                        class="text-zinc-400 hover:text-white text-xs cursor-pointer px-2 py-1 rounded-lg hover:bg-[#252525]">
+                    Fechar
+                </button>
+            </div>
+
+            <form action="/auth/perfil" method="POST" enctype="multipart/form-data" class="space-y-4">
+                <div class="flex items-center gap-4 p-3.5 bg-[#141414] rounded-2xl border border-white/[0.06]">
+                    <label for="input-foto-perfil" class="relative w-14 h-14 rounded-full bg-[#2a389b] text-white font-bold text-base flex items-center justify-center border-2 border-[#2a389b] overflow-hidden cursor-pointer shrink-0 group">
+                        {% if tem_avatar %}
+                        <img id="preview-avatar-modal" src="/auth/avatar" alt="Avatar" class="w-full h-full object-cover">
+                        {% else %}
+                        <span id="letra-avatar-modal">{{ (usuario_nome or usuario_email)[0]|upper }}</span>
+                        <img id="preview-avatar-modal" src="" alt="Avatar" class="w-full h-full object-cover hidden">
+                        {% endif %}
+                        <span class="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 flex items-center justify-center text-[10px] font-semibold text-white transition-opacity">
+                            Foto
+                        </span>
+                    </label>
+                    <div class="flex-1 min-w-0">
+                        <label for="input-foto-perfil" class="text-xs font-semibold text-white hover:text-[#93a3ff] cursor-pointer block">
+                            Alterar foto de perfil
+                        </label>
+                        <p class="text-[11px] text-zinc-500 mt-0.5">PNG, JPG ou WEBP (até 5 MB)</p>
+                        <input type="file"
+                               name="foto"
+                               id="input-foto-perfil"
+                               accept="image/png,image/jpeg,image/webp"
+                               onchange="previsualizarFotoPerfil(this)"
+                               class="sr-only">
+                    </div>
+                </div>
+
+                <div>
+                    <label for="perfil-nome" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Seu Nome ou Nome do Escritório
+                    </label>
+                    <input type="text"
+                           name="nome"
+                           id="perfil-nome"
+                           value="{{ usuario_nome or '' }}"
+                           required
+                           class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
+                </div>
+
+                <div>
+                    <label for="perfil-senha" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                        Nova Senha
+                    </label>
+                    <input type="password"
+                           name="nova_senha"
+                           id="perfil-senha"
+                           minlength="6"
+                           placeholder="Deixe em branco para manter a senha atual"
+                           class="w-full px-3.5 py-2.5 bg-[#141414] border border-white/10 rounded-xl text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b]">
+                </div>
+
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button"
+                            onclick="document.getElementById('modal-perfil').close()"
+                            class="px-4 py-2 bg-[#252525] hover:bg-zinc-700 text-zinc-300 text-xs font-semibold rounded-xl cursor-pointer">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 bg-[#2a389b] hover:bg-[#3444b8] text-white text-xs font-semibold rounded-xl cursor-pointer shadow-md">
+                        Salvar Alterações
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
     <script>
+        function destacarPontoGrafico(x, y, competencia, valorFormatado) {
+            const linhaGuia = document.getElementById('grafico-linha-guia');
+            const pontoAtivo = document.getElementById('grafico-ponto-ativo');
+            const pontoMedia = document.getElementById('grafico-ponto-media');
+            const tooltipBox = document.getElementById('grafico-tooltip-box');
+            const tooltipComp = document.getElementById('grafico-tooltip-comp');
+            const tooltipVal = document.getElementById('grafico-tooltip-val');
+
+            if (linhaGuia) {
+                linhaGuia.setAttribute('x1', x);
+                linhaGuia.setAttribute('x2', x);
+            }
+            if (pontoAtivo) {
+                pontoAtivo.setAttribute('cx', x);
+                pontoAtivo.setAttribute('cy', y);
+            }
+            if (pontoMedia) {
+                pontoMedia.setAttribute('cx', x);
+            }
+            if (tooltipComp) {
+                tooltipComp.textContent = `Comp. ${competencia}`;
+            }
+            if (tooltipVal) {
+                tooltipVal.textContent = valorFormatado;
+            }
+            if (tooltipBox) {
+                const boxX = x > 520 ? (x - 148) : (x + 12);
+                const boxY = y < 120 ? (y + 10) : (y - 68);
+                tooltipBox.setAttribute('transform', `translate(${boxX}, ${boxY})`);
+            }
+        }
+
+        function previsualizarFotoPerfil(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = document.getElementById('preview-avatar-modal');
+                    const letra = document.getElementById('letra-avatar-modal');
+                    if (img && e.target && e.target.result) {
+                        img.src = e.target.result;
+                        img.classList.remove('hidden');
+                    }
+                    if (letra) {
+                        letra.classList.add('hidden');
+                    }
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
         function filtrarTabelaCompetencias(termo) {
             const q = (termo || '').toLowerCase().trim();
             document.querySelectorAll('.linha-competencia').forEach(tr => {
