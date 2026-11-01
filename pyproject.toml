@@ -22,6 +22,7 @@ dependencies = [
     "bcrypt>=4.0.0",
     "pyjwt>=2.8.0",
     "slowapi>=0.1.10",
+    "reportlab>=5.1.0",
 ]
 
 [tool.setuptools.packages.find]
@@ -44,3 +45,9 @@ known-third-party = ["alembic"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "types-reportlab>=5.0.0.20261008",
+]

@@ -16,7 +16,10 @@ docker-compose.yml
 # Ignore do Python
 # -----------------------------------------
 
-# Byte-compiled / optimized / DLL files
+# Unit test / coverage
+tests/output/
+tests/data/*.png
+.pytest_cache/
 __pycache__/
 *.py[codz]
 *$py.class
