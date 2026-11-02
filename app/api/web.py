@@ -9,7 +9,11 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from app.api.auth import obter_usuario_logado, usuario_possui_avatar
+from app.api.auth import (
+    google_oauth_configurado,
+    obter_usuario_logado,
+    usuario_possui_avatar,
+)
 from app.database.models import Cliente, Contribuicao, JobExtracao
 from app.database.repository import (
     contar_extracos,
@@ -150,7 +154,9 @@ async def renderizar_dashboard(
                 "clientes": clientes_do_advogado,
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
+                "usuario_cpf_cnpj": usuario.cpf_cnpj or "",
                 "usuario_schema": usuario.schema_name,
+                "google_oauth_ativo": google_oauth_configurado(),
                 "tem_avatar": usuario_possui_avatar(usuario.id),
                 "avatar_url": usuario.avatar_url,
                 "total_extracos": total_extracos,
@@ -216,7 +222,9 @@ async def renderizar_analise_cnis(
             context={
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
+                "usuario_cpf_cnpj": usuario.cpf_cnpj or "",
                 "usuario_schema": usuario.schema_name,
+                "google_oauth_ativo": google_oauth_configurado(),
                 "tem_avatar": usuario_possui_avatar(usuario.id),
                 "avatar_url": usuario.avatar_url,
                 "clientes": clientes_do_advogado,
@@ -253,5 +261,8 @@ async def renderizar_login(
     return templates.TemplateResponse(
         request=request,
         name="login.html",
-        context={"erro": mensagem_erro},
+        context={
+            "erro": mensagem_erro,
+            "google_oauth_ativo": google_oauth_configurado(),
+        },
     )

@@ -34,6 +34,7 @@ class Advogado(Base):
         index=True,
         nullable=True,
     )
+    cpf_cnpj: Mapped[str | None] = mapped_column(String(20), nullable=True)
     avatar_url: Mapped[str | None] = mapped_column(String(500), nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
 

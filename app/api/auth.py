@@ -77,6 +77,11 @@ def usuario_possui_avatar(advogado_id: uuid.UUID) -> bool:
     return caminho.exists() and caminho.stat().st_size > 0
 
 
+def google_oauth_configurado() -> bool:
+    """Indica se as credenciais OAuth 2.0 do Google estão ativas no ambiente."""
+    return bool(GOOGLE_CLIENT_ID.strip() and GOOGLE_CLIENT_SECRET.strip())
+
+
 @router.post("/login")
 @limiter.limit("5/minute")
 async def fazer_login(
@@ -99,6 +104,17 @@ async def fazer_login(
     Raises:
         HTTPException: Se for cliente de API/testes e credenciais inválidas.
     """
+    if google_oauth_configurado():
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse(
+                url="/login?erro=Utilize+o+botão+Continuar+com+o+Google+para+acessar.",
+                status_code=303,
+            )
+        raise HTTPException(
+            status_code=403,
+            detail="Login por senha desativado; utilize autenticação via Google.",
+        )
+
     advogado = obter_advogado_por_email(db, email=email)
     if not advogado or not verify_password(password, advogado.senha_hash):
         if "text/html" in request.headers.get("accept", ""):
@@ -145,6 +161,17 @@ async def cadastrar_advogado(
     Raises:
         HTTPException: Se for cliente de API e o e-mail já estiver cadastrado.
     """
+    if google_oauth_configurado():
+        if "text/html" in request.headers.get("accept", ""):
+            return RedirectResponse(
+                url="/login?erro=O+cadastro+é+realizado+exclusivamente+via+Google.",
+                status_code=303,
+            )
+        raise HTTPException(
+            status_code=403,
+            detail="Cadastro por senha desativado; utilize autenticação via Google.",
+        )
+
     existente = obter_advogado_por_email(db, email=email)
     if existente:
         if "text/html" in request.headers.get("accept", ""):
@@ -387,15 +414,17 @@ async def atualizar_perfil(
     usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
     db: Annotated[Session, Depends(get_db)],
     nome: Annotated[str | None, Form()] = None,
+    cpf_cnpj: Annotated[str | None, Form()] = None,
     nova_senha: Annotated[str | None, Form()] = None,
     foto: Annotated[UploadFile | None, File()] = None,
 ) -> RedirectResponse:
-    """Atualiza o nome, senha e/ou foto de perfil do advogado logado.
+    """Atualiza o nome, CPF/CNPJ, senha e/ou foto de perfil do advogado logado.
 
     Args:
         usuario: Advogado autenticado.
         db: Sessão ativa do banco de dados.
         nome: Novo nome de exibição (opcional).
+        cpf_cnpj: CPF ou CNPJ do titular ou escritório (opcional).
         nova_senha: Nova senha de acesso (opcional).
         foto: Arquivo de imagem de avatar enviado (opcional).
 
@@ -407,6 +436,7 @@ async def atualizar_perfil(
         advogado=usuario,
         nome=nome,
         nova_senha=nova_senha,
+        cpf_cnpj=cpf_cnpj,
     )
 
     if foto and foto.filename:

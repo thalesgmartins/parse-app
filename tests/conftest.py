@@ -5,6 +5,9 @@ import os
 # Define flag para desativar execuções de rede/migrations durante testes unitários
 os.environ["TESTING"] = "1"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
+os.environ["GOOGLE_CLIENT_ID"] = ""
+os.environ["GOOGLE_CLIENT_SECRET"] = ""
+os.environ["ASAAS_API_KEY"] = ""
 
 from collections.abc import Generator
 

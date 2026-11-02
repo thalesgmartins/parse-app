@@ -5,6 +5,7 @@ import json
 import logging
 import re
 import urllib.error
+import urllib.parse
 import urllib.request
 from dataclasses import dataclass
 from datetime import date, timedelta
@@ -62,10 +63,64 @@ def _requisicao_asaas(
     except urllib.error.HTTPError as err:
         detalhe = err.read().decode("utf-8", errors="ignore")
         _LOGGER.error("Erro HTTP na comunicação com Asaas (%s): %s", err.code, detalhe)
-        raise ValueError("Falha ao comunicar com o gateway de pagamentos Asaas.") from err
+        mensagem_asaas = "Falha ao comunicar com o gateway de pagamentos Asaas."
+        try:
+            erro_json = json.loads(detalhe)
+            if isinstance(erro_json, dict) and isinstance(erro_json.get("errors"), list):
+                lista_erros = erro_json["errors"]
+                if lista_erros and isinstance(lista_erros[0], dict):
+                    desc = str(lista_erros[0].get("description") or "").strip()
+                    if desc:
+                        mensagem_asaas = f"Asaas: {desc}"
+        except ValueError:
+            pass
+        raise ValueError(mensagem_asaas) from err
     except urllib.error.URLError as err:
         _LOGGER.error("Falha de rede ao conectar ao Asaas: %s", err)
         raise ValueError("Gateway de pagamentos Asaas indisponível no momento.") from err
+
+
+def _obter_ou_criar_cliente_asaas(
+    advogado: Advogado,
+    doc_limpo: str,
+    customer_id_atual: str | None = None,
+) -> str:
+    """Reutiliza o cliente já existente no Asaas ou cria um único cadastro."""
+    payload_cliente: dict[str, object] = {
+        "name": advogado.nome,
+        "email": advogado.email,
+        "cpfCnpj": doc_limpo,
+        "externalReference": str(advogado.id),
+    }
+
+    if customer_id_atual and not customer_id_atual.startswith("cus_local_"):
+        try:
+            _requisicao_asaas("POST", f"/customers/{customer_id_atual}", payload_cliente)
+            return customer_id_atual
+        except ValueError:
+            _LOGGER.debug(
+                "Cliente %s não encontrado no Asaas; buscando por e-mail.", customer_id_atual
+            )
+
+    try:
+        email_q = urllib.parse.quote(advogado.email)
+        busca = _requisicao_asaas("GET", f"/customers?email={email_q}")
+        lista = busca.get("data")
+        if isinstance(lista, list) and lista:
+            for item in lista:
+                if isinstance(item, dict) and not item.get("deleted") and item.get("id"):
+                    cid_encontrado = str(item["id"])
+                    if not item.get("cpfCnpj"):
+                        _requisicao_asaas("POST", f"/customers/{cid_encontrado}", payload_cliente)
+                    return cid_encontrado
+    except ValueError:
+        pass
+
+    resp_cliente = _requisicao_asaas("POST", "/customers", payload_cliente)
+    customer_id = str(resp_cliente.get("id", ""))
+    if not customer_id:
+        raise ValueError("Asaas não retornou o identificador do cliente (customer_id).")
+    return customer_id
 
 
 def criar_assinatura_asaas(
@@ -73,18 +128,22 @@ def criar_assinatura_asaas(
     tier: str,
     cpf_cnpj: str | None = None,
     forma_pagamento: str = "UNDEFINED",
+    customer_id_atual: str | None = None,
+    subscription_id_atual: str | None = None,
 ) -> ResultadoCheckoutAsaas:
     """Cria ou atualiza assinatura recorrente mensal no Asaas (ou em modo local).
 
     Quando ASAAS_API_KEY não está configurada no ambiente, opera em modo de
-    homologação local ativando o tier imediatamente. Quando configurada, cria
-    o customer e a subscription no Asaas v3 e retorna o link de pagamento.
+    homologação local ativando o tier imediatamente. Quando configurada,
+    reutiliza ou cria o customer e a subscription no Asaas v3.
 
     Args:
         advogado: Instância do Advogado titular da assinatura.
         tier: Código do plano ('autonomo', 'pequeno_escritorio', 'grande_escritorio').
         cpf_cnpj: CPF ou CNPJ do titular para faturamento no Asaas (opcional).
         forma_pagamento: 'PIX', 'BOLETO', 'CREDIT_CARD' ou 'UNDEFINED'.
+        customer_id_atual: ID de cliente Asaas já vinculado ao advogado (opcional).
+        subscription_id_atual: ID de assinatura Asaas já existente (opcional).
 
     Returns:
         ResultadoCheckoutAsaas contendo IDs e URL de pagamento.
@@ -100,25 +159,30 @@ def criar_assinatura_asaas(
     if not ASAAS_API_KEY.strip():
         return ResultadoCheckoutAsaas(
             modo_simulacao=True,
-            customer_id=f"cus_local_{advogado.id.hex[:12]}",
-            subscription_id=f"sub_local_{tier}_{advogado.id.hex[:8]}",
+            customer_id=customer_id_atual or f"cus_local_{advogado.id.hex[:12]}",
+            subscription_id=subscription_id_atual or f"sub_local_{tier}_{advogado.id.hex[:8]}",
             checkout_url=None,
             status_inicial="active",
         )
 
-    doc_limpo = re.sub(r"\D", "", cpf_cnpj or "")
-    payload_cliente: dict[str, object] = {
-        "name": advogado.nome,
-        "email": advogado.email,
-        "externalReference": str(advogado.id),
-    }
-    if doc_limpo:
-        payload_cliente["cpfCnpj"] = doc_limpo
+    doc_origem = cpf_cnpj or getattr(advogado, "cpf_cnpj", None) or ""
+    doc_limpo = re.sub(r"\D", "", doc_origem)
+    eh_sandbox_asaas = (
+        "sandbox.asaas.com" in ASAAS_API_URL.lower()
+        or ASAAS_API_KEY.strip().startswith("$aact_hmlg_")
+    )
+    if not doc_limpo and eh_sandbox_asaas:
+        doc_limpo = "24971563792"
+    elif len(doc_limpo) not in (11, 14):
+        raise ValueError(
+            "Para assinar, preencha seu CPF ou CNPJ nas Configurações do Perfil (menu lateral)."
+        )
 
-    resp_cliente = _requisicao_asaas("POST", "/customers", payload_cliente)
-    customer_id = str(resp_cliente.get("id", ""))
-    if not customer_id:
-        raise ValueError("Asaas não retornou o identificador do cliente (customer_id).")
+    customer_id = _obter_ou_criar_cliente_asaas(
+        advogado=advogado,
+        doc_limpo=doc_limpo,
+        customer_id_atual=customer_id_atual,
+    )
 
     vencimento = (date.today() + timedelta(days=1)).isoformat()
     billing_valido = (
@@ -126,19 +190,41 @@ def criar_assinatura_asaas(
         if forma_pagamento in ("PIX", "BOLETO", "CREDIT_CARD", "UNDEFINED")
         else "UNDEFINED"
     )
-    payload_sub: dict[str, object] = {
-        "customer": customer_id,
-        "billingType": billing_valido,
-        "value": plano.valor_mensal,
-        "nextDueDate": vencimento,
-        "cycle": "MONTHLY",
-        "description": f"ParseApp SaaS - Plano {plano.nome} ({plano.limite_mensal} extratos/mês)",
-        "externalReference": f"{advogado.id}:{plano.codigo}",
-    }
-    resp_sub = _requisicao_asaas("POST", "/subscriptions", payload_sub)
-    sub_id = str(resp_sub.get("id", ""))
+    descricao_sub = f"ParseApp SaaS - Plano {plano.nome} ({plano.limite_mensal} extratos/mês)"
+    ref_externa = f"{advogado.id}:{plano.codigo}"
+
+    sub_id = ""
+    if subscription_id_atual and not subscription_id_atual.startswith("sub_local_"):
+        try:
+            resp_upd = _requisicao_asaas(
+                "POST",
+                f"/subscriptions/{subscription_id_atual}",
+                {
+                    "billingType": billing_valido,
+                    "value": plano.valor_mensal,
+                    "description": descricao_sub,
+                    "externalReference": ref_externa,
+                    "updatePendingPayments": True,
+                },
+            )
+            sub_id = str(resp_upd.get("id", ""))
+        except ValueError:
+            sub_id = ""
+
     if not sub_id:
-        raise ValueError("Asaas não retornou o identificador da assinatura (subscription_id).")
+        payload_sub: dict[str, object] = {
+            "customer": customer_id,
+            "billingType": billing_valido,
+            "value": plano.valor_mensal,
+            "nextDueDate": vencimento,
+            "cycle": "MONTHLY",
+            "description": descricao_sub,
+            "externalReference": ref_externa,
+        }
+        resp_sub = _requisicao_asaas("POST", "/subscriptions", payload_sub)
+        sub_id = str(resp_sub.get("id", ""))
+        if not sub_id:
+            raise ValueError("Asaas não retornou o identificador da assinatura (subscription_id).")
 
     invoice_url: str | None = None
     try:

@@ -146,14 +146,16 @@ def atualizar_perfil_advogado(
     advogado: Advogado,
     nome: str | None = None,
     nova_senha: str | None = None,
+    cpf_cnpj: str | None = None,
 ) -> Advogado:
-    """Atualiza o nome de exibição e/ou a senha de um advogado existente.
+    """Atualiza o nome de exibição, CPF/CNPJ e/ou a senha de um advogado existente.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
         advogado: Instância do Advogado autenticado.
         nome: Novo nome de exibição (opcional).
         nova_senha: Nova senha em texto plano para hash bcrypt (opcional).
+        cpf_cnpj: CPF ou CNPJ do titular/escritório (opcional).
 
     Returns:
         Instância do Advogado atualizada e sincronizada no banco.
@@ -162,6 +164,9 @@ def atualizar_perfil_advogado(
         advogado.nome = nome.strip()
     if nova_senha and nova_senha.strip():
         advogado.senha_hash = hash_password(nova_senha.strip())
+    if cpf_cnpj is not None:
+        apenas_digitos = "".join(ch for ch in cpf_cnpj if ch.isdigit())
+        advogado.cpf_cnpj = apenas_digitos if apenas_digitos else None
     db.commit()
     db.refresh(advogado)
     return advogado

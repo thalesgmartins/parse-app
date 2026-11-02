@@ -16,6 +16,7 @@ from app.services.asaas import criar_assinatura_asaas, validar_token_webhook_asa
 from app.services.quotas import (
     CATALOGO_PLANOS,
     atualizar_plano_assinatura,
+    garantir_assinatura_advogado,
     obter_resumo_quota,
 )
 
@@ -70,12 +71,36 @@ async def assinar_plano_tier(
             status_code=303,
         )
 
+    assinatura_atual = garantir_assinatura_advogado(db, usuario.id)
+    em_uso = assinatura_atual.creditos_consumidos + assinatura_atual.creditos_reservados
+    if (
+        assinatura_atual.tier == tier
+        and assinatura_atual.status == "active"
+        and em_uso < assinatura_atual.limite_mensal
+    ):
+        return RedirectResponse(
+            url="/dashboard?sucesso_plano=Este+já+é+o+seu+plano+ativo+(a+renovação+mensal+é+automática).",
+            status_code=303,
+        )
+
+    if cpf_cnpj and cpf_cnpj.strip():
+        digitos = "".join(ch for ch in cpf_cnpj if ch.isdigit())
+        if len(digitos) in (11, 14):
+            usuario.cpf_cnpj = digitos
+            db.commit()
+
+    deve_reiniciar_ciclo = (
+        assinatura_atual.tier == "trial" or em_uso >= assinatura_atual.limite_mensal
+    )
+
     try:
         resultado = criar_assinatura_asaas(
             advogado=usuario,
             tier=tier,
-            cpf_cnpj=cpf_cnpj,
+            cpf_cnpj=cpf_cnpj or usuario.cpf_cnpj,
             forma_pagamento=forma_pagamento,
+            customer_id_atual=assinatura_atual.asaas_customer_id,
+            subscription_id_atual=assinatura_atual.asaas_subscription_id,
         )
         atualizar_plano_assinatura(
             db=db,
@@ -85,7 +110,7 @@ async def assinar_plano_tier(
             asaas_subscription_id=resultado.subscription_id,
             checkout_url=resultado.checkout_url,
             status=resultado.status_inicial,
-            reiniciar_ciclo=True,
+            reiniciar_ciclo=deve_reiniciar_ciclo,
         )
         if resultado.checkout_url and not resultado.modo_simulacao:
             return RedirectResponse(url=resultado.checkout_url, status_code=303)

@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParseApp — Acesso ao Sistema</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
-    <link rel="stylesheet" href="/static/css/tailwind.min.css">
-    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/static/css/tailwind.min.css?v=0.10.1">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css?v=0.10.1">
     <style>
         .beam-pillar-1 {
             background: linear-gradient(to top, rgba(121, 181, 185, 0.85) 0%, rgba(42, 56, 155, 0.75) 45%, rgba(42, 56, 155, 0) 100%);
@@ -84,12 +84,17 @@
                 <!-- Botão Principal: Login Social Google OAuth 2.0 -->
                 <div class="mb-5">
                     <a href="/auth/google/login"
-                       class="w-full py-3 px-4 bg-[#141414] hover:bg-[#252525] border border-white/15 hover:border-[#2a389b] text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm">
-                        <i class="mdi mdi-google text-lg text-[#93a3ff]"></i>
+                       class="w-full py-3.5 px-5 bg-[#2a389b] hover:bg-[#3444b8] text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#2a389b]/25">
+                        <i class="mdi mdi-google text-lg text-white"></i>
                         <span>Continuar com o Google</span>
                     </a>
                 </div>
 
+                {% if google_oauth_ativo %}
+                <p class="text-xs text-zinc-400 text-center leading-relaxed">
+                    O acesso e o cadastro do seu escritório são realizados de forma segura através da sua conta Google verificada.
+                </p>
+                {% else %}
                 <div class="relative flex items-center justify-center mb-5">
                     <div class="border-t border-white/[0.08] w-full"></div>
                     <span class="bg-[#1e1e1e] px-3 text-[11px] uppercase tracking-wider text-zinc-500 shrink-0">
@@ -98,7 +103,7 @@
                     <div class="border-t border-white/[0.08] w-full"></div>
                 </div>
 
-                <!-- Formulário de Login -->
+                <!-- Formulário de Login (Modo Local sem Google OAuth configurado) -->
                 <form id="form-login" action="/auth/login" method="POST" class="space-y-5">
                     <div>
                         <label for="email" class="block text-xs font-medium text-zinc-400 mb-2">
@@ -191,6 +196,7 @@
                         Criar nova conta
                     </button>
                 </div>
+                {% endif %}
 
             </div>
         </section>
