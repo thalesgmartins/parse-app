@@ -1,7 +1,9 @@
 """Testes de integração para Planos/Billing Asaas e Autenticação Google OAuth 2.0."""
 
+from datetime import datetime, timedelta, timezone
 from unittest.mock import patch
 
+import pytest
 from fastapi.testclient import TestClient
 
 from app.core.config import ASAAS_WEBHOOK_TOKEN
@@ -9,7 +11,12 @@ from app.core.security import create_access_token
 from app.database.repository import criar_advogado, obter_advogado_por_email
 from app.database.session import SessionLocal
 from app.main import app
-from app.services.quotas import garantir_assinatura_advogado, obter_resumo_quota
+from app.services.quotas import (
+    QuotaInsuficienteError,
+    garantir_assinatura_advogado,
+    obter_resumo_quota,
+    reservar_creditos_extracao,
+)
 
 
 def test_fluxo_assinatura_tiers_e_consulta_meu_plano() -> None:
@@ -204,3 +211,75 @@ def test_upgrade_preserva_consumo_e_bloqueia_assinatura_duplicada_mesmo_tier() -
             assert resumo_upgrade.limite_mensal == 150
             assert resumo_upgrade.creditos_consumidos == 10
             assert resumo_upgrade.creditos_restantes == 140
+
+
+def test_vencimento_ciclo_mensal_bloqueia_acesso_ate_renovacao() -> None:
+    """Garante que ao virar o mês (ciclo_fim vencido) o acesso é bloqueado até renovar."""
+    with SessionLocal() as db:
+        advogado = criar_advogado(db, "Dr. Ciclo", "ciclo@escritorio.com", "senha123")
+        adv_id = advogado.id
+        sub = garantir_assinatura_advogado(db, adv_id)
+        sub.tier = "autonomo"
+        sub.limite_mensal = 30
+        sub.creditos_consumidos = 5
+        sub.status = "active"
+        sub.ciclo_fim = datetime.now(timezone.utc) - timedelta(hours=1)
+        db.commit()
+
+        # Ao consultar quota ou tentar reservar com ciclo vencido, status vira past_due e saldo = 0
+        resumo = obter_resumo_quota(db, adv_id)
+        assert resumo.status == "past_due"
+        assert resumo.creditos_restantes == 0
+
+        with pytest.raises(QuotaInsuficienteError):
+            reservar_creditos_extracao(db, adv_id, quantidade=1)
+
+
+def test_webhook_deduplica_mesmo_payment_id_entre_confirmed_e_received() -> None:
+    """Garante que PAYMENT_CONFIRMED e PAYMENT_RECEIVED da mesma fatura não renovam 2 vezes."""
+    with SessionLocal() as db:
+        advogado = criar_advogado(db, "Dr. Unico", "unico@escritorio.com", "senha123")
+        adv_id = advogado.id
+
+    with TestClient(app) as client:
+        # 1. PAYMENT_CONFIRMED ativa o plano Autônomo
+        client.post(
+            "/assinaturas/webhook/asaas",
+            json={
+                "id": "evt_confirm_1",
+                "event": "PAYMENT_CONFIRMED",
+                "payment": {
+                    "id": "pay_mesma_fatura_99",
+                    "externalReference": f"{adv_id}:autonomo",
+                    "status": "CONFIRMED",
+                },
+            },
+            headers={"asaas-access-token": ASAAS_WEBHOOK_TOKEN},
+        )
+
+        # Advogado usa 7 créditos após o pagamento confirmado
+        with SessionLocal() as db:
+            sub = garantir_assinatura_advogado(db, adv_id)
+            sub.creditos_consumidos = 7
+            db.commit()
+
+        # 2. Dias depois o Asaas envia PAYMENT_RECEIVED para a MESMA fatura pay_mesma_fatura_99
+        client.post(
+            "/assinaturas/webhook/asaas",
+            json={
+                "id": "evt_received_2",
+                "event": "PAYMENT_RECEIVED",
+                "payment": {
+                    "id": "pay_mesma_fatura_99",
+                    "externalReference": f"{adv_id}:autonomo",
+                    "status": "RECEIVED",
+                },
+            },
+            headers={"asaas-access-token": ASAAS_WEBHOOK_TOKEN},
+        )
+
+        # Os 7 créditos consumidos NÃO devem ter sido zerados pelo segundo evento da mesma fatura
+        with SessionLocal() as db:
+            resumo = obter_resumo_quota(db, adv_id)
+            assert resumo.creditos_consumidos == 7
+            assert resumo.creditos_restantes == 23

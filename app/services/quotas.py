@@ -123,6 +123,18 @@ def listar_planos_comerciais() -> list[PlanoTier]:
     ]
 
 
+def _ciclo_mensal_expirado(ciclo_fim: datetime | None) -> bool:
+    """Verifica se a data de encerramento do ciclo de 30 dias já foi ultrapassada."""
+    if ciclo_fim is None:
+        return False
+    fim_utc = (
+        ciclo_fim.replace(tzinfo=timezone.utc)
+        if ciclo_fim.tzinfo is None
+        else ciclo_fim.astimezone(timezone.utc)
+    )
+    return datetime.now(timezone.utc) >= fim_utc
+
+
 def garantir_assinatura_advogado(
     db: Session,
     advogado_id: uuid.UUID | str,
@@ -130,6 +142,9 @@ def garantir_assinatura_advogado(
     com_lock: bool = False,
 ) -> Assinatura:
     """Recupera ou cria a assinatura padrão (Trial) de um advogado.
+
+    Se o ciclo mensal de 30 dias de um plano pago já tiver expirado sem
+    confirmação de renovação, bloqueia automaticamente o status como 'past_due'.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
@@ -146,6 +161,14 @@ def garantir_assinatura_advogado(
 
     assinatura = db.scalar(stmt)
     if assinatura:
+        if (
+            assinatura.tier != "trial"
+            and assinatura.status == "active"
+            and _ciclo_mensal_expirado(assinatura.ciclo_fim)
+        ):
+            assinatura.status = "past_due"
+            db.commit()
+            db.refresh(assinatura)
         return assinatura
 
     plano_inicial = CATALOGO_PLANOS["trial"]
@@ -179,12 +202,16 @@ def obter_resumo_quota(db: Session, advogado_id: uuid.UUID | str) -> ResumoQuota
     hoje_str = date.today().isoformat()
     erros_hoje = assinatura.erros_validacao_hoje if assinatura.data_ultimo_erro == hoje_str else 0
     usados_ou_reservados = assinatura.creditos_consumidos + assinatura.creditos_reservados
-    restantes = max(0, assinatura.limite_mensal - usados_ou_reservados)
-    pct = (
-        min(100, round((usados_ou_reservados / assinatura.limite_mensal) * 100))
-        if assinatura.limite_mensal > 0
-        else 100
-    )
+    if assinatura.status == "active":
+        restantes = max(0, assinatura.limite_mensal - usados_ou_reservados)
+        pct = (
+            min(100, round((usados_ou_reservados / assinatura.limite_mensal) * 100))
+            if assinatura.limite_mensal > 0
+            else 100
+        )
+    else:
+        restantes = 0
+        pct = 100
     return ResumoQuotaAdvogado(
         tier=assinatura.tier,
         nome_plano=plano.nome,

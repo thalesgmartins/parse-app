@@ -123,6 +123,104 @@ def _obter_ou_criar_cliente_asaas(
     return customer_id
 
 
+def _buscar_cobranca_pendente(sub_id: str) -> str | None:
+    """Retorna o invoiceUrl da cobrança PENDING ou OVERDUE de uma assinatura."""
+    try:
+        cobrancas = _requisicao_asaas("GET", f"/subscriptions/{sub_id}/payments")
+        lista_pagamentos = cobrancas.get("data")
+        if isinstance(lista_pagamentos, list):
+            for pgto in lista_pagamentos:
+                if isinstance(pgto, dict) and pgto.get("status") in ("PENDING", "OVERDUE"):
+                    url_cobranca = pgto.get("invoiceUrl") or pgto.get("bankSlipUrl")
+                    if isinstance(url_cobranca, str) and url_cobranca:
+                        return url_cobranca
+    except ValueError:
+        _LOGGER.debug("Não foi possível consultar cobranças da assinatura %s", sub_id)
+    return None
+
+
+def _criar_cobranca_avulsa_asaas(
+    customer_id: str,
+    valor: float,
+    descricao: str,
+    ref_externa: str,
+    forma_pagamento: str = "UNDEFINED",
+) -> str | None:
+    """Cria ou reutiliza uma cobrança avulsa (diferença de upgrade ou renovação)."""
+    try:
+        pendentes = _requisicao_asaas("GET", f"/payments?customer={customer_id}&status=PENDING")
+        lista = pendentes.get("data")
+        if isinstance(lista, list):
+            for pgto in lista:
+                if isinstance(pgto, dict) and pgto.get("externalReference") == ref_externa:
+                    pid = str(pgto.get("id") or "")
+                    if pid:
+                        atualizado = _requisicao_asaas(
+                            "POST",
+                            f"/payments/{pid}",
+                            {
+                                "billingType": forma_pagamento,
+                                "value": valor,
+                                "dueDate": (date.today() + timedelta(days=1)).isoformat(),
+                                "description": descricao,
+                            },
+                        )
+                        url_ex = atualizado.get("invoiceUrl") or atualizado.get("bankSlipUrl")
+                        if isinstance(url_ex, str) and url_ex:
+                            return url_ex
+    except ValueError:
+        pass
+
+    vencimento = (date.today() + timedelta(days=1)).isoformat()
+    novo = _requisicao_asaas(
+        "POST",
+        "/payments",
+        {
+            "customer": customer_id,
+            "billingType": forma_pagamento,
+            "value": valor,
+            "dueDate": vencimento,
+            "description": descricao,
+            "externalReference": ref_externa,
+        },
+    )
+    url_nova = novo.get("invoiceUrl") or novo.get("bankSlipUrl")
+    return str(url_nova) if isinstance(url_nova, str) and url_nova else None
+
+
+def listar_pagamentos_confirmados_asaas(
+    customer_id: str | None,
+    subscription_id: str | None = None,
+) -> list[dict[str, object]]:
+    """Lista cobranças já confirmadas/recebidas no Asaas para sincronização segura."""
+    if not ASAAS_API_KEY.strip():
+        return []
+
+    confirmados: list[dict[str, object]] = []
+    endpoints: list[str] = []
+    if subscription_id and not subscription_id.startswith("sub_local_"):
+        endpoints.append(f"/subscriptions/{subscription_id}/payments")
+    if customer_id and not customer_id.startswith("cus_local_"):
+        endpoints.append(f"/payments?customer={customer_id}&limit=20")
+
+    vistos: set[str] = set()
+    for ep in endpoints:
+        try:
+            resp = _requisicao_asaas("GET", ep)
+            dados = resp.get("data")
+            if isinstance(dados, list):
+                for item in dados:
+                    if isinstance(item, dict):
+                        pid = str(item.get("id") or "")
+                        st = str(item.get("status") or "")
+                        if pid and pid not in vistos and st in ("CONFIRMED", "RECEIVED"):
+                            vistos.add(pid)
+                            confirmados.append(item)
+        except ValueError:
+            continue
+    return confirmados
+
+
 def criar_assinatura_asaas(
     advogado: Advogado,
     tier: str,
@@ -130,12 +228,18 @@ def criar_assinatura_asaas(
     forma_pagamento: str = "UNDEFINED",
     customer_id_atual: str | None = None,
     subscription_id_atual: str | None = None,
+    tier_atual: str = "trial",
+    ciclo_pago_ativo: bool = False,
 ) -> ResultadoCheckoutAsaas:
-    """Cria ou atualiza assinatura recorrente mensal no Asaas (ou em modo local).
+    """Cria ou atualiza assinatura recorrente mensal no Asaas sem cobrança duplicada.
 
-    Quando ASAAS_API_KEY não está configurada no ambiente, opera em modo de
-    homologação local ativando o tier imediatamente. Quando configurada,
-    reutiliza ou cria o customer e a subscription no Asaas v3.
+    Regras de proteção financeira:
+    - Se a assinatura atual possui fatura PENDING, atualiza a própria fatura pendente.
+    - Se o advogado já pagou o mês atual (`ciclo_pago_ativo=True`) e faz UPGRADE:
+      atualiza a assinatura recorrente para o próximo mês (`updatePendingPayments=False`)
+      e gera cobrança avulsa APENAS da diferença de preço (`novo_valor - valor_atual`).
+    - Se o advogado já pagou o mês atual e faz DOWNGRADE:
+      agenda o novo valor para o próximo vencimento sem gerar nova cobrança no mês atual.
 
     Args:
         advogado: Instância do Advogado titular da assinatura.
@@ -144,6 +248,8 @@ def criar_assinatura_asaas(
         forma_pagamento: 'PIX', 'BOLETO', 'CREDIT_CARD' ou 'UNDEFINED'.
         customer_id_atual: ID de cliente Asaas já vinculado ao advogado (opcional).
         subscription_id_atual: ID de assinatura Asaas já existente (opcional).
+        tier_atual: Tier atualmente ativo na conta do advogado.
+        ciclo_pago_ativo: True se o advogado já está em um ciclo comercial pago vigente.
 
     Returns:
         ResultadoCheckoutAsaas contendo IDs e URL de pagamento.
@@ -155,6 +261,7 @@ def criar_assinatura_asaas(
         raise ValueError(f"Plano comercial inválido para assinatura: {tier}")
 
     plano = CATALOGO_PLANOS[tier]
+    plano_anterior = CATALOGO_PLANOS.get(tier_atual, CATALOGO_PLANOS["trial"])
 
     if not ASAAS_API_KEY.strip():
         return ResultadoCheckoutAsaas(
@@ -194,7 +301,10 @@ def criar_assinatura_asaas(
     ref_externa = f"{advogado.id}:{plano.codigo}"
 
     sub_id = ""
+    fatura_pendente_url: str | None = None
     if subscription_id_atual and not subscription_id_atual.startswith("sub_local_"):
+        fatura_pendente_url = _buscar_cobranca_pendente(subscription_id_atual)
+        atualizar_pendentes = fatura_pendente_url is not None or not ciclo_pago_ativo
         try:
             resp_upd = _requisicao_asaas(
                 "POST",
@@ -204,7 +314,7 @@ def criar_assinatura_asaas(
                     "value": plano.valor_mensal,
                     "description": descricao_sub,
                     "externalReference": ref_externa,
-                    "updatePendingPayments": True,
+                    "updatePendingPayments": atualizar_pendentes,
                 },
             )
             sub_id = str(resp_upd.get("id", ""))
@@ -225,24 +335,34 @@ def criar_assinatura_asaas(
         sub_id = str(resp_sub.get("id", ""))
         if not sub_id:
             raise ValueError("Asaas não retornou o identificador da assinatura (subscription_id).")
+        fatura_pendente_url = _buscar_cobranca_pendente(sub_id)
 
-    invoice_url: str | None = None
-    try:
-        cobrancas = _requisicao_asaas("GET", f"/subscriptions/{sub_id}/payments")
-        lista_pagamentos = cobrancas.get("data")
-        if isinstance(lista_pagamentos, list) and lista_pagamentos:
-            primeiro = lista_pagamentos[0]
-            if isinstance(primeiro, dict):
-                url_cobranca = primeiro.get("invoiceUrl") or primeiro.get("bankSlipUrl")
-                if isinstance(url_cobranca, str) and url_cobranca:
-                    invoice_url = url_cobranca
-    except ValueError:
-        _LOGGER.debug("Link direto da cobrança ainda não disponível para sub %s", sub_id)
+    invoice_url: str | None = fatura_pendente_url
+    if not invoice_url and ciclo_pago_ativo and tier_atual != "trial":
+        if plano.valor_mensal > plano_anterior.valor_mensal:
+            diferenca = round(plano.valor_mensal - plano_anterior.valor_mensal, 2)
+            invoice_url = _criar_cobranca_avulsa_asaas(
+                customer_id=customer_id,
+                valor=diferenca,
+                descricao=(
+                    f"ParseApp SaaS - Diferença de Upgrade ({plano_anterior.nome} -> {plano.nome})"
+                ),
+                ref_externa=f"{advogado.id}:{plano.codigo}:upgrade",
+                forma_pagamento=billing_valido,
+            )
+        elif plano.codigo == plano_anterior.codigo:
+            invoice_url = _criar_cobranca_avulsa_asaas(
+                customer_id=customer_id,
+                valor=plano.valor_mensal,
+                descricao=f"ParseApp SaaS - Renovação Antecipada ({plano.nome})",
+                ref_externa=f"{advogado.id}:{plano.codigo}:renovacao",
+                forma_pagamento=billing_valido,
+            )
 
     return ResultadoCheckoutAsaas(
         modo_simulacao=False,
         customer_id=customer_id,
         subscription_id=sub_id,
         checkout_url=invoice_url,
-        status_inicial="active",
+        status_inicial="active" if not invoice_url else "pending_payment",
     )
