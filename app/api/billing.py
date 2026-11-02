@@ -19,7 +19,9 @@ from app.services.asaas import (
 )
 from app.services.quotas import (
     CATALOGO_PLANOS,
+    _ciclo_mensal_expirado,
     atualizar_plano_assinatura,
+    cancelar_assinatura_advogado,
     garantir_assinatura_advogado,
     obter_resumo_quota,
 )
@@ -274,6 +276,22 @@ async def rota_sincronizar_assinatura(
     )
 
 
+@router.post("/cancelar")
+async def cancelar_minha_assinatura(
+    usuario: Annotated[Advogado, Depends(obter_usuario_logado)],
+    db: Annotated[Session, Depends(get_db)],
+) -> RedirectResponse:
+    """Cancela a renovação da assinatura mantendo o acesso até o fim do ciclo."""
+    cancelar_assinatura_advogado(db, usuario.id)
+    return RedirectResponse(
+        url=(
+            "/dashboard?sucesso_plano=Renovação+automática+cancelada!+"
+            "Você+continuará+com+acesso+aos+seus+extratos+até+o+fim+do+ciclo+atual."
+        ),
+        status_code=303,
+    )
+
+
 @router.post("/webhook/asaas")
 async def receber_webhook_asaas(
     request: Request,
@@ -347,7 +365,12 @@ async def receber_webhook_asaas(
         elif tipo_evento == "PAYMENT_OVERDUE":
             assinatura.status = "past_due"
         elif tipo_evento in ("SUBSCRIPTION_DELETED", "SUBSCRIPTION_INACTIVATED"):
-            assinatura.status = "canceled"
+            if assinatura.ciclo_fim and not _ciclo_mensal_expirado(assinatura.ciclo_fim):
+                assinatura.status = "canceling"
+            else:
+                assinatura.status = "canceled"
+            assinatura.asaas_subscription_id = None
+            assinatura.checkout_url = None
 
     db.commit()
     return {"status": "processed", "event_id": event_id, "event": tipo_evento}

@@ -283,3 +283,50 @@ def test_webhook_deduplica_mesmo_payment_id_entre_confirmed_e_received() -> None
             resumo = obter_resumo_quota(db, adv_id)
             assert resumo.creditos_consumidos == 7
             assert resumo.creditos_restantes == 23
+
+
+def test_cancelamento_mantem_acesso_ate_fim_do_ciclo_e_bloqueia_ao_expirar() -> None:
+    """Valida que cancelar assinatura mantém uso até fim do mês e bloqueia após expirar."""
+    with SessionLocal() as db:
+        advogado = criar_advogado(db, "Dra. Cancelada", "cancelada@escritorio.com", "senha123")
+        adv_id = advogado.id
+        sub = garantir_assinatura_advogado(db, adv_id)
+        sub.tier = "autonomo"
+        sub.limite_mensal = 30
+        sub.creditos_consumidos = 4
+        sub.status = "active"
+        sub.asaas_subscription_id = "sub_teste_para_cancelar_123"
+        sub.ciclo_fim = datetime.now(timezone.utc) + timedelta(days=15)
+        db.commit()
+
+    token = create_access_token({"sub": str(adv_id), "email": "cancelada@escritorio.com"})
+    with (
+        patch("app.services.asaas.cancelar_assinatura_asaas", return_value=True),
+        TestClient(app) as client,
+    ):
+        client.cookies.set("access_token", token)
+        resp = client.post("/assinaturas/cancelar", follow_redirects=False)
+        assert resp.status_code == 303
+        assert "sucesso_plano" in resp.headers["location"]
+
+    with SessionLocal() as db:
+        # Durante o restante do mês: status = canceling, saldo restante normal (26)
+        resumo_vigente = obter_resumo_quota(db, adv_id)
+        assert resumo_vigente.status == "canceling"
+        assert resumo_vigente.cancelamento_agendado is True
+        assert resumo_vigente.creditos_restantes == 26
+
+        # Permite upload normalmente
+        reservar_creditos_extracao(db, adv_id, quantidade=1)
+
+        # Simula o fim do mês (ciclo_fim expirado)
+        sub_atual = garantir_assinatura_advogado(db, adv_id)
+        sub_atual.ciclo_fim = datetime.now(timezone.utc) - timedelta(hours=1)
+        db.commit()
+
+        # Ao consultar novamente após expirar, muda para canceled e saldo zera
+        resumo_expirado = obter_resumo_quota(db, adv_id)
+        assert resumo_expirado.status == "canceled"
+        assert resumo_expirado.creditos_restantes == 0
+        with pytest.raises(QuotaInsuficienteError):
+            reservar_creditos_extracao(db, adv_id, quantidade=1)

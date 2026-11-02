@@ -68,7 +68,12 @@
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-zinc-400">
-                    <span>{{ quota.creditos_restantes }} restantes no mês</span>
+                    <span>{{ quota.creditos_restantes }} restantes</span>
+                    {% if quota.cancelamento_agendado %}
+                    <span class="text-amber-400 font-medium">Cancelamento agendado</span>
+                    {% elif quota.ciclo_fim_formatado %}
+                    <span>até {{ quota.ciclo_fim_formatado }}</span>
+                    {% endif %}
                 </div>
 
                 <button type="button"
@@ -568,6 +573,13 @@
                 </button>
             </div>
 
+            {% if quota and quota.cancelamento_agendado %}
+            <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-200 text-xs flex items-center gap-2">
+                <i class="mdi mdi-clock-alert-outline text-base text-amber-400 shrink-0"></i>
+                <span>Renovação automática cancelada. Você pode utilizar seus extratos restantes normalmente até <strong>{{ quota.ciclo_fim_formatado }}</strong>.</span>
+            </div>
+            {% endif %}
+
             {% if not usuario_cpf_cnpj %}
             <div class="p-3 bg-[#141414] rounded-xl border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <label for="cpf-cnpj-modal-planos" class="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
@@ -642,6 +654,21 @@
                 </form>
                 {% endfor %}
             </div>
+
+            {% if quota and quota.tier != 'trial' and not quota.cancelamento_agendado and quota.status == 'active' %}
+            <div class="pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <span class="text-[11px] text-zinc-400">
+                    Ciclo atual válido até <strong class="text-zinc-200">{{ quota.ciclo_fim_formatado or 'o fim do ciclo' }}</strong>.
+                </span>
+                <form action="/assinaturas/cancelar" method="POST"
+                      onsubmit="return confirm('Tem certeza que deseja cancelar a renovação automática da sua assinatura? Você continuará com acesso aos seus extratos até o final do ciclo atual.');">
+                    <button type="submit"
+                            class="text-[11px] text-zinc-400 hover:text-rose-400 underline transition-colors cursor-pointer">
+                        Cancelar renovação automática
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </dialog>
     {% endif %}

@@ -221,6 +221,18 @@ def listar_pagamentos_confirmados_asaas(
     return confirmados
 
 
+def cancelar_assinatura_asaas(subscription_id: str | None) -> bool:
+    """Cancela a recorrência de uma assinatura no gateway Asaas."""
+    if not subscription_id or subscription_id.startswith("sub_local_") or not ASAAS_API_KEY.strip():
+        return True
+    try:
+        _requisicao_asaas("DELETE", f"/subscriptions/{subscription_id}")
+        return True
+    except ValueError as exc:
+        _LOGGER.warning("Falha ao cancelar assinatura %s no Asaas: %s", subscription_id, exc)
+        return False
+
+
 def criar_assinatura_asaas(
     advogado: Advogado,
     tier: str,

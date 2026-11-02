@@ -80,6 +80,8 @@ class ResumoQuotaAdvogado:
     max_erros_diario: int
     valor_mensal: float
     checkout_url: str | None
+    ciclo_fim_formatado: str | None = None
+    cancelamento_agendado: bool = False
 
 
 class QuotaInsuficienteError(ValueError):
@@ -161,12 +163,11 @@ def garantir_assinatura_advogado(
 
     assinatura = db.scalar(stmt)
     if assinatura:
-        if (
-            assinatura.tier != "trial"
-            and assinatura.status == "active"
-            and _ciclo_mensal_expirado(assinatura.ciclo_fim)
-        ):
-            assinatura.status = "past_due"
+        if assinatura.tier != "trial" and _ciclo_mensal_expirado(assinatura.ciclo_fim):
+            if assinatura.status == "canceling":
+                assinatura.status = "canceled"
+            elif assinatura.status == "active":
+                assinatura.status = "past_due"
             db.commit()
             db.refresh(assinatura)
         return assinatura
@@ -202,7 +203,10 @@ def obter_resumo_quota(db: Session, advogado_id: uuid.UUID | str) -> ResumoQuota
     hoje_str = date.today().isoformat()
     erros_hoje = assinatura.erros_validacao_hoje if assinatura.data_ultimo_erro == hoje_str else 0
     usados_ou_reservados = assinatura.creditos_consumidos + assinatura.creditos_reservados
-    if assinatura.status == "active":
+    ciclo_fmt = assinatura.ciclo_fim.strftime("%d/%m/%Y") if assinatura.ciclo_fim else None
+    is_canceling = assinatura.status == "canceling"
+
+    if assinatura.status in ("active", "canceling"):
         restantes = max(0, assinatura.limite_mensal - usados_ou_reservados)
         pct = (
             min(100, round((usados_ou_reservados / assinatura.limite_mensal) * 100))
@@ -212,6 +216,7 @@ def obter_resumo_quota(db: Session, advogado_id: uuid.UUID | str) -> ResumoQuota
     else:
         restantes = 0
         pct = 100
+
     return ResumoQuotaAdvogado(
         tier=assinatura.tier,
         nome_plano=plano.nome,
@@ -225,6 +230,8 @@ def obter_resumo_quota(db: Session, advogado_id: uuid.UUID | str) -> ResumoQuota
         max_erros_diario=MAX_ERROS_VALIDACAO_DIARIO,
         valor_mensal=plano.valor_mensal,
         checkout_url=assinatura.checkout_url,
+        ciclo_fim_formatado=ciclo_fmt,
+        cancelamento_agendado=is_canceling,
     )
 
 
@@ -267,10 +274,10 @@ def reservar_creditos_extracao(
 
     ocupados = assinatura.creditos_consumidos + assinatura.creditos_reservados
     restantes = max(0, assinatura.limite_mensal - ocupados)
-    if assinatura.status != "active" or quantidade > restantes:
+    if assinatura.status not in ("active", "canceling") or quantidade > restantes:
         db.commit()
         raise QuotaInsuficienteError(
-            restantes=restantes if assinatura.status == "active" else 0,
+            restantes=restantes if assinatura.status in ("active", "canceling") else 0,
             solicitados=quantidade,
             nome_plano=plano.nome,
         )
@@ -389,6 +396,41 @@ def atualizar_plano_assinatura(
         assinatura.erros_validacao_hoje = 0
         assinatura.ciclo_fim = datetime.now(timezone.utc) + timedelta(days=30)
 
+    db.commit()
+    db.refresh(assinatura)
+    return assinatura
+
+
+def cancelar_assinatura_advogado(
+    db: Session,
+    advogado_id: uuid.UUID | str,
+) -> Assinatura:
+    """Cancela a recorrência da assinatura no Asaas mantendo acesso até o fim do ciclo.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        advogado_id: Identificador único do advogado.
+
+    Returns:
+        Instância de Assinatura com status atualizado.
+    """
+    assinatura = garantir_assinatura_advogado(db, advogado_id, com_lock=True)
+    if assinatura.tier == "trial":
+        return assinatura
+
+    sub_id = assinatura.asaas_subscription_id
+    if sub_id:
+        from app.services.asaas import cancelar_assinatura_asaas
+
+        cancelar_assinatura_asaas(sub_id)
+
+    if assinatura.ciclo_fim and not _ciclo_mensal_expirado(assinatura.ciclo_fim):
+        assinatura.status = "canceling"
+    else:
+        assinatura.status = "canceled"
+
+    assinatura.asaas_subscription_id = None
+    assinatura.checkout_url = None
     db.commit()
     db.refresh(assinatura)
     return assinatura
