@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParseApp — Estatísticas e Análise do CNIS</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
-    <link rel="stylesheet" href="/static/css/tailwind.min.css">
-    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
+    <link rel="stylesheet" href="/static/css/tailwind.min.css?v=0.10.1">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css?v=0.10.1">
     <script src="/static/js/htmx.min.js"></script>
 </head>
 <body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
@@ -648,36 +648,49 @@
 
     {% if planos %}
     <!-- Modal de Planos (3 Tiers) e Integração Asaas -->
-    <dialog id="modal-planos" class="rounded-2xl p-0 backdrop:bg-black/80 bg-transparent shadow-2xl max-w-4xl w-full m-auto">
-        <div class="p-6 sm:p-8 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-6">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/[0.08]">
+    <dialog id="modal-planos" style="max-width: 46rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-4xl w-full m-auto">
+        <div class="p-5 sm:p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
+            <div class="flex items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
                 <div>
-                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
-                        <i class="mdi mdi-crown-outline text-xl text-[#93a3ff]"></i>
+                    <h3 class="text-sm sm:text-base font-bold text-white flex items-center gap-2">
+                        <i class="mdi mdi-crown-outline text-lg text-[#93a3ff]"></i>
                         Planos e Franquia Mensal de Extratos CNIS
                     </h3>
-                    <p class="text-xs text-zinc-400 mt-1">
-                        Arquivos inválidos (não-CNIS) não descontam da sua franquia comercial paga. Pagamento recorrente processado via Asaas.
+                    <p class="text-[11px] text-zinc-400 mt-0.5">
+                        Arquivos inválidos (não-CNIS) não descontam da franquia comercial. Pagamento via Asaas.
                     </p>
                 </div>
                 <button type="button"
                         onclick="document.getElementById('modal-planos').close()"
-                        class="text-zinc-400 hover:text-white text-xs cursor-pointer px-3 py-1.5 rounded-lg hover:bg-[#252525] self-end sm:self-center">
+                        class="text-zinc-400 hover:text-white text-xs cursor-pointer px-2.5 py-1 rounded-lg hover:bg-[#252525]">
                     Fechar
                 </button>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="p-3 bg-[#141414] rounded-xl border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <label for="cpf-cnpj-modal-planos" class="text-xs font-medium text-zinc-300 flex items-center gap-1.5">
+                    <i class="mdi mdi-card-account-details-outline text-sm text-[#93a3ff]"></i>
+                    CPF ou CNPJ do titular (para emissão no Asaas):
+                </label>
+                <input type="text"
+                       id="cpf-cnpj-modal-planos"
+                       placeholder="000.000.000-00 ou 00.000.000/0001-00"
+                       oninput="sincronizarCpfPlanos(this.value)"
+                       class="w-full sm:w-64 px-3 py-1.5 bg-[#1e1e1e] border border-white/10 rounded-xl text-xs text-white placeholder-zinc-500 focus:outline-none focus:border-[#2a389b]">
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3.5">
                 {% for pl in planos %}
                 <form action="/assinaturas/assinar" method="POST"
-                      class="rounded-2xl p-5 flex flex-col justify-between space-y-5 border transition-all
+                      class="rounded-2xl p-4 flex flex-col justify-between space-y-4 border transition-all
                       {% if pl.destaque %}bg-[#252525] border-[#2a389b] shadow-lg shadow-[#2a389b]/15{% else %}bg-[#161618] border-white/[0.08]{% endif %}">
                     <input type="hidden" name="tier" value="{{ pl.codigo }}">
+                    <input type="hidden" name="cpf_cnpj" class="input-cpf-cnpj-plano" value="">
 
-                    <div class="space-y-3">
+                    <div class="space-y-2.5">
                         <div class="flex items-center justify-between">
-                            <span class="w-9 h-9 rounded-xl bg-[#2a389b]/25 border border-[#2a389b]/40 text-[#93a3ff] flex items-center justify-center">
-                                <i class="mdi {{ pl.icone_mdi }} text-lg"></i>
+                            <span class="w-8 h-8 rounded-xl bg-[#2a389b]/25 border border-[#2a389b]/40 text-[#93a3ff] flex items-center justify-center">
+                                <i class="mdi {{ pl.icone_mdi }} text-base"></i>
                             </span>
                             {% if quota and quota.tier == pl.codigo %}
                             <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#79b5b9]/20 text-[#79b5b9] border border-[#79b5b9]/40">
@@ -696,21 +709,21 @@
                         </div>
 
                         <div class="pt-2 border-t border-white/[0.06]">
-                            <div class="text-2xl font-bold text-white font-mono">
+                            <div class="text-xl font-bold text-white font-mono">
                                 <span class="text-xs font-sans text-[#93a3ff]">R$</span> {{ pl.valor_mensal|moeda_br }}
                                 <span class="text-xs font-sans font-normal text-zinc-400">/mês</span>
                             </div>
-                            <p class="text-xs font-semibold text-[#79b5b9] mt-1 flex items-center gap-1.5">
+                            <p class="text-[11px] font-semibold text-[#79b5b9] mt-1 flex items-center gap-1">
                                 <i class="mdi mdi-check-circle-outline"></i>
                                 {{ pl.limite_mensal }} extratos CNIS válidos / mês
                             </p>
                         </div>
                     </div>
 
-                    <div class="space-y-2.5 pt-2">
+                    <div class="space-y-2 pt-1">
                         <select name="forma_pagamento"
                                 aria-label="Forma de pagamento Asaas"
-                                class="w-full px-3 py-2 bg-[#121212] border border-white/10 rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-[#2a389b]">
+                                class="w-full px-2.5 py-1.5 bg-[#121212] border border-white/10 rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-[#2a389b]">
                             <option value="PIX">PIX / QR Code (Asaas)</option>
                             <option value="CREDIT_CARD">Cartão de Crédito</option>
                             <option value="BOLETO">Boleto Bancário</option>
@@ -718,7 +731,7 @@
                         </select>
 
                         <button type="submit"
-                                class="w-full py-2.5 px-4 bg-[#2a389b] hover:bg-[#3444b8] text-white font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+                                class="w-full py-2 px-3 bg-[#2a389b] hover:bg-[#3444b8] text-white font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
                             <i class="mdi mdi-shield-check-outline text-sm"></i>
                             <span>{% if quota and quota.tier == pl.codigo %}Renovar Franquia{% else %}Assinar {{ pl.nome }}{% endif %}</span>
                         </button>
@@ -734,6 +747,11 @@
         function abrirModalPlanos() {
             const modal = document.getElementById('modal-planos');
             if (modal) modal.showModal();
+        }
+        function sincronizarCpfPlanos(valor) {
+            document.querySelectorAll('.input-cpf-cnpj-plano').forEach(el => {
+                el.value = valor;
+            });
         }
         function destacarPontoGrafico(x, y, competencia, valorFormatado) {
             const linhaGuia = document.getElementById('grafico-linha-guia');

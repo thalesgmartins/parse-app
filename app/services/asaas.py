@@ -62,7 +62,18 @@ def _requisicao_asaas(
     except urllib.error.HTTPError as err:
         detalhe = err.read().decode("utf-8", errors="ignore")
         _LOGGER.error("Erro HTTP na comunicação com Asaas (%s): %s", err.code, detalhe)
-        raise ValueError("Falha ao comunicar com o gateway de pagamentos Asaas.") from err
+        mensagem_asaas = "Falha ao comunicar com o gateway de pagamentos Asaas."
+        try:
+            erro_json = json.loads(detalhe)
+            if isinstance(erro_json, dict) and isinstance(erro_json.get("errors"), list):
+                lista_erros = erro_json["errors"]
+                if lista_erros and isinstance(lista_erros[0], dict):
+                    desc = str(lista_erros[0].get("description") or "").strip()
+                    if desc:
+                        mensagem_asaas = f"Asaas: {desc}"
+        except ValueError:
+            pass
+        raise ValueError(mensagem_asaas) from err
     except urllib.error.URLError as err:
         _LOGGER.error("Falha de rede ao conectar ao Asaas: %s", err)
         raise ValueError("Gateway de pagamentos Asaas indisponível no momento.") from err
@@ -107,13 +118,21 @@ def criar_assinatura_asaas(
         )
 
     doc_limpo = re.sub(r"\D", "", cpf_cnpj or "")
+    eh_sandbox_asaas = (
+        "sandbox.asaas.com" in ASAAS_API_URL.lower()
+        or ASAAS_API_KEY.strip().startswith("$aact_hmlg_")
+    )
+    if not doc_limpo and eh_sandbox_asaas:
+        doc_limpo = "24971563792"
+    elif len(doc_limpo) not in (11, 14):
+        raise ValueError("Informe um CPF (11 dígitos) ou CNPJ (14 dígitos) válido para assinar.")
+
     payload_cliente: dict[str, object] = {
         "name": advogado.nome,
         "email": advogado.email,
+        "cpfCnpj": doc_limpo,
         "externalReference": str(advogado.id),
     }
-    if doc_limpo:
-        payload_cliente["cpfCnpj"] = doc_limpo
 
     resp_cliente = _requisicao_asaas("POST", "/customers", payload_cliente)
     customer_id = str(resp_cliente.get("id", ""))
