@@ -39,6 +39,7 @@ Execute os comandos **a partir da raiz do projeto**.
 | Script | Descrição | Como Executar |
 | :--- | :--- | :--- |
 | `adicionar-usuario.sh` | Cadastra um usuário/advogado via endpoint `/auth/register` com validações. | `./script/api/adicionar-usuario.sh [NOME] [EMAIL] [SENHA]` |
+| `conceder-cortesia.sh` | Concede plano de cortesia/teste sem cobrança Asaas e sem expiração mensal. | `./script/api/conceder-cortesia.sh [EMAIL] [LIMITE] [TIER]` |
 
 ---
 
