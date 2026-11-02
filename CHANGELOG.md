@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.10.0](https://github.com/thalesgmartins/parse-app/compare/v0.9.0...v0.10.0) (2026-11-02)
+
+
+### Features
+
+* **auth:** implementar login Google OAuth 2.0 e provisionamento automatico de tenant ([9ccd3bb](https://github.com/thalesgmartins/parse-app/commit/9ccd3bb2cae04468193358b7dfa4fbf3eecec089))
+* **billing:** adicionar 3 tiers de planos, quotas atomicas, fail-fast CNIS e integracao Asaas ([f89046a](https://github.com/thalesgmartins/parse-app/commit/f89046a53ae1034ce6b2f22a4d76ebfc8db7e013))
+* **database:** implementar isolamento multi-tenant por schema e modelos de assinatura ([a959cb3](https://github.com/thalesgmartins/parse-app/commit/a959cb3ecb26593f6f933528ced9a05237b2c697))
+* **ui:** migrar icones para Material Design Icons e adicionar modal de planos ([6bb64bf](https://github.com/thalesgmartins/parse-app/commit/6bb64bfdc1f1e4e81ebe8057a1049ca605b93e25))
+
+
+### Bug Fixes
+
+* **tenancy:** preservar search_path entre transacoes no processamento em lote ([95d215c](https://github.com/thalesgmartins/parse-app/commit/95d215c4f11faff4cc0417c550e235ddf1344e9e))
+
 ## [0.9.0](https://github.com/thalesgmartins/parse-app/compare/v0.8.0...v0.9.0) (2026-11-01)
 
 
