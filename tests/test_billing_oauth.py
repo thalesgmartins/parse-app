@@ -9,7 +9,7 @@ from app.core.security import create_access_token
 from app.database.repository import criar_advogado, obter_advogado_por_email
 from app.database.session import SessionLocal
 from app.main import app
-from app.services.quotas import obter_resumo_quota
+from app.services.quotas import garantir_assinatura_advogado, obter_resumo_quota
 
 
 def test_fluxo_assinatura_tiers_e_consulta_meu_plano() -> None:
@@ -140,3 +140,67 @@ def test_callback_google_oauth_provisiona_advogado_e_schema() -> None:
         assert advogado.nome == "Dr. Google OAuth"
         assert advogado.google_sub == "google-oauth2-sub-987654321"
         assert advogado.schema_name == f"tenant_{advogado.id.hex}"
+
+
+def test_bloqueia_login_e_cadastro_por_senha_quando_google_oauth_configurado() -> None:
+    """Garante que login/cadastro por senha fica desativado quando Google OAuth está ativo."""
+    with (
+        patch("app.api.auth.GOOGLE_CLIENT_ID", "id-google-ativo"),
+        patch("app.api.auth.GOOGLE_CLIENT_SECRET", "secret-google-ativo"),
+        TestClient(app) as client,
+    ):
+        resp_reg = client.post(
+            "/auth/register",
+            data={"nome": "Teste", "email": "teste@adv.com", "password": "123456"},
+            follow_redirects=False,
+        )
+        assert resp_reg.status_code == 403
+
+        resp_login = client.post(
+            "/auth/login",
+            data={"email": "teste@adv.com", "password": "123456"},
+            follow_redirects=False,
+        )
+        assert resp_login.status_code == 403
+
+
+def test_upgrade_preserva_consumo_e_bloqueia_assinatura_duplicada_mesmo_tier() -> None:
+    """Garante que re-assinar o mesmo plano ativo não zera créditos e upgrade preserva uso."""
+    with SessionLocal() as db:
+        advogado = criar_advogado(db, "Dra. Fernanda", "fernanda@escritorio.com", "senha123")
+        adv_id = advogado.id
+        email = advogado.email
+
+    token = create_access_token({"sub": str(adv_id), "email": email})
+    with TestClient(app) as client:
+        client.cookies.set("access_token", token)
+
+        # 1. Assina Autônomo (30 créditos)
+        client.post("/assinaturas/assinar", data={"tier": "autonomo"}, follow_redirects=False)
+
+        # Simula 10 extrações já realizadas no mês
+        with SessionLocal() as db:
+            sub = garantir_assinatura_advogado(db, adv_id)
+            sub.creditos_consumidos = 10
+            db.commit()
+
+        # 2. Tenta clicar novamente em Autônomo: não deve zerar os 10 créditos consumidos
+        client.post("/assinaturas/assinar", data={"tier": "autonomo"}, follow_redirects=False)
+        with SessionLocal() as db:
+            resumo_mesmo = obter_resumo_quota(db, adv_id)
+            assert resumo_mesmo.tier == "autonomo"
+            assert resumo_mesmo.creditos_consumidos == 10
+            assert resumo_mesmo.creditos_restantes == 20
+
+        # 3. Faz upgrade para Pequeno Escritório (150): mantém os 10 usados (140 restantes)
+        client.post(
+            "/assinaturas/assinar",
+            data={"tier": "pequeno_escritorio"},
+            follow_redirects=False,
+        )
+        with SessionLocal() as db:
+            resumo_upgrade = obter_resumo_quota(db, adv_id)
+            assert resumo_upgrade.tier == "pequeno_escritorio"
+            assert resumo_upgrade.limite_mensal == 150
+            assert resumo_upgrade.creditos_consumidos == 10
+            assert resumo_upgrade.creditos_restantes == 140
