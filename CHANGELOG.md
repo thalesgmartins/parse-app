@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.11.0](https://github.com/thalesgmartins/parse-app/compare/v0.10.0...v0.11.0) (2026-11-02)
+
+
+### Features
+
+* **billing,auth:** simplificar modal de planos, evitar duplicacao no Asaas e priorizar login Google ([78a2c6c](https://github.com/thalesgmartins/parse-app/commit/78a2c6cafd0db798ed25a5a2391f4e2c435f1aff))
+
+
+### Bug Fixes
+
+* **billing:** corrigir cache de CSS do modal de planos e CPF/CNPJ no Asaas ([232bf6f](https://github.com/thalesgmartins/parse-app/commit/232bf6f038f557f6f04eaaf1fcadb0f0f004183c))
+
 ## [0.10.0](https://github.com/thalesgmartins/parse-app/compare/v0.9.0...v0.10.0) (2026-11-02)
 
 
