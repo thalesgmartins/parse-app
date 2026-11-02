@@ -124,22 +124,29 @@ def processar_job_extracao(
 
     except Exception as exc:
         _LOGGER.error("Falha ao processar job %s: %s", id_uuid, exc)
-        job_falha = obter_job_por_id(session, id_uuid)
-        if job_falha:
-            eh_nao_cnis = "Nenhuma competência" in str(exc)
-            estornar_reserva_credito(
-                session,
-                job_falha.advogado_id,
-                arquivo_invalido=eh_nao_cnis,
-            )
-            registrar_log_extracao(
-                db=session,
-                advogado_id=job_falha.advogado_id,
-                nome_arquivo=job_falha.nome_arquivo,
-                status="erro",
-                mensagem_erro=str(exc),
-            )
-            falhar_job(session, id_uuid, mensagem_erro=str(exc))
+        try:
+            session.rollback()
+            if owns_session and advogado_id:
+                ativar_schema_tenant(session, advogado_id=advogado_id)
+            job_falha = obter_job_por_id(session, id_uuid)
+            if job_falha:
+                eh_nao_cnis = "Nenhuma competência" in str(exc)
+                estornar_reserva_credito(
+                    session,
+                    job_falha.advogado_id,
+                    arquivo_invalido=eh_nao_cnis,
+                )
+                registrar_log_extracao(
+                    db=session,
+                    advogado_id=job_falha.advogado_id,
+                    nome_arquivo=job_falha.nome_arquivo,
+                    status="erro",
+                    mensagem_erro=str(exc),
+                )
+                falhar_job(session, id_uuid, mensagem_erro=str(exc))
+        except Exception as err_interno:
+            _LOGGER.error("Erro ao registrar falha do job %s: %s", id_uuid, err_interno)
+            session.rollback()
         return False
 
     finally:

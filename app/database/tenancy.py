@@ -4,8 +4,9 @@ import logging
 import re
 import uuid
 
-from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy import event, text
+from sqlalchemy.engine import Connection
+from sqlalchemy.orm import Session, SessionTransaction
 
 _LOGGER = logging.getLogger(__name__)
 _RE_SCHEMA_TENANT = re.compile(r"^tenant_[0-9a-f]{32}$")
@@ -214,21 +215,37 @@ def ativar_schema_tenant(
 
     dialeto = db.bind.dialect.name if db.bind is not None else "sqlite"
     if dialeto != "sqlite":
-        db.execute(text(f'SET search_path TO "{alvo}", public'))
+        db.execute(text(f'SET LOCAL search_path TO "{alvo}", public'))
 
     return alvo
 
 
+@event.listens_for(Session, "after_begin")
+def _aplicar_search_path_na_transacao(
+    session: Session,
+    transaction: SessionTransaction,
+    connection: Connection,
+) -> None:
+    """Garante que toda nova transação da sessão mantenha o search_path do tenant.
+
+    No SQLAlchemy 2.0, cada commit() ou rollback() encerra a transação e devolve
+    a conexão ao pool. Este listener reaplica SET LOCAL search_path automaticamente
+    em cada nova transação aberta pela sessão, impedindo condições de corrida entre
+    workers em lote e requisições de polling HTMX concorrentes.
+    """
+    del transaction
+    if connection.dialect.name == "sqlite":
+        return
+    alvo = session.info.get("tenant_schema")
+    if isinstance(alvo, str) and alvo and alvo != "public":
+        schema_seguro = validar_nome_schema(alvo)
+        connection.exec_driver_sql(f'SET LOCAL search_path TO "{schema_seguro}", public')
+
+
 def resetar_schema_sessao(db: Session) -> None:
-    """Restaura o search_path da sessão para o schema public ao encerrar o uso.
+    """Limpa o metadado de tenant da sessão ao encerrar o ciclo de vida.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
     """
     db.info["tenant_schema"] = "public"
-    dialeto = db.bind.dialect.name if db.bind is not None else "sqlite"
-    if dialeto != "sqlite":
-        try:
-            db.execute(text("SET search_path TO public"))
-        except Exception as exc:
-            _LOGGER.debug("Não foi possível resetar search_path da sessão: %s", exc)
