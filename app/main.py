@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from slowapi.errors import RateLimitExceeded
 
-from app.api import auth, cnis, web
+from app.api import auth, billing, cnis, web
 from app.core.limiter import limiter
 
 VERMELHO = "\033[31m"
@@ -111,4 +111,5 @@ if STATIC_DIR.exists():
 # Adiciona os routers do app
 app.include_router(cnis.router)
 app.include_router(auth.router)
+app.include_router(billing.router)
 app.include_router(web.router)
