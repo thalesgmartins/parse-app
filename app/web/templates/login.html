@@ -6,6 +6,7 @@
     <title>ParseApp — Acesso ao Sistema</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
     <style>
         .beam-pillar-1 {
             background: linear-gradient(to top, rgba(121, 181, 185, 0.85) 0%, rgba(42, 56, 155, 0.75) 45%, rgba(42, 56, 155, 0) 100%);
@@ -75,12 +76,27 @@
                 <!-- Alerta de Erro de Autenticação -->
                 {% if erro %}
                 <div class="mb-6 p-3.5 bg-rose-500/10 border border-rose-500/30 rounded-xl text-rose-300 text-xs flex items-center gap-2.5">
-                    <svg class="w-4 h-4 text-rose-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+                    <i class="mdi mdi-alert-circle-outline text-base text-rose-400 shrink-0"></i>
                     <span class="font-medium">{{ erro }}</span>
                 </div>
                 {% endif %}
+
+                <!-- Botão Principal: Login Social Google OAuth 2.0 -->
+                <div class="mb-5">
+                    <a href="/auth/google/login"
+                       class="w-full py-3 px-4 bg-[#141414] hover:bg-[#252525] border border-white/15 hover:border-[#2a389b] text-white font-semibold text-sm rounded-xl transition-all flex items-center justify-center gap-3 shadow-sm">
+                        <i class="mdi mdi-google text-lg text-[#93a3ff]"></i>
+                        <span>Continuar com o Google</span>
+                    </a>
+                </div>
+
+                <div class="relative flex items-center justify-center mb-5">
+                    <div class="border-t border-white/[0.08] w-full"></div>
+                    <span class="bg-[#1e1e1e] px-3 text-[11px] uppercase tracking-wider text-zinc-500 shrink-0">
+                        ou acesse com e-mail
+                    </span>
+                    <div class="border-t border-white/[0.08] w-full"></div>
+                </div>
 
                 <!-- Formulário de Login -->
                 <form id="form-login" action="/auth/login" method="POST" class="space-y-5">

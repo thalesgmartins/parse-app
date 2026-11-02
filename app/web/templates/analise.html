@@ -6,6 +6,7 @@
     <title>ParseApp — Estatísticas e Análise do CNIS</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
     <link rel="stylesheet" href="/static/css/tailwind.min.css">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css">
     <script src="/static/js/htmx.min.js"></script>
 </head>
 <body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
@@ -23,9 +24,7 @@
                 <a href="/dashboard"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors">
                     <span class="w-7 h-7 rounded-lg bg-[#1e1e1e] text-zinc-400 flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
+                        <i class="mdi mdi-view-dashboard-outline text-base"></i>
                     </span>
                     <span>Dashboard</span>
                 </a>
@@ -33,13 +32,41 @@
                 <a href="/analise"
                    class="flex items-center gap-3 px-3.5 py-2.5 rounded-xl bg-[#252525] text-white font-semibold text-xs border border-white/[0.06] shadow-sm">
                     <span class="w-7 h-7 rounded-lg bg-[#2a389b] text-white flex items-center justify-center shrink-0">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
+                        <i class="mdi mdi-chart-areaspline text-base"></i>
                     </span>
                     <span>Análise e Estatísticas</span>
                 </a>
             </nav>
+
+            {% if quota %}
+            <div class="p-3.5 rounded-2xl bg-[#1e1e1e] border border-white/[0.07] space-y-3">
+                <div class="flex items-center justify-between gap-2">
+                    <span class="text-[11px] font-bold text-white flex items-center gap-1.5 truncate">
+                        <i class="mdi mdi-crown-outline text-sm text-[#93a3ff]"></i>
+                        {{ quota.nome_plano }}
+                    </span>
+                    <span class="text-[10px] font-mono font-semibold text-zinc-300 bg-[#252525] px-2 py-0.5 rounded-md border border-white/[0.05] shrink-0">
+                        {{ quota.creditos_consumidos }}/{{ quota.limite_mensal }}
+                    </span>
+                </div>
+
+                <div class="w-full bg-[#121212] h-1.5 rounded-full overflow-hidden">
+                    <div class="bg-[#2a389b] h-1.5 rounded-full transition-all duration-300"
+                         style="width: {{ quota.percentual_uso }}%"></div>
+                </div>
+
+                <div class="flex items-center justify-between text-[10px] text-zinc-400">
+                    <span>{{ quota.creditos_restantes }} restantes no mês</span>
+                </div>
+
+                <button type="button"
+                        onclick="abrirModalPlanos()"
+                        class="w-full py-2 px-3 bg-[#2a389b]/25 hover:bg-[#2a389b] text-[#93a3ff] hover:text-white border border-[#2a389b]/50 rounded-xl text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="mdi mdi-arrow-up-bold-circle-outline text-sm"></i>
+                    <span>Gerenciar Plano</span>
+                </button>
+            </div>
+            {% endif %}
         </div>
 
         <!-- Rodapé da Sidebar: Configurações da Conta e Logout -->
@@ -47,19 +74,14 @@
             <button type="button"
                     onclick="document.getElementById('modal-perfil').showModal()"
                     class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
-                <svg class="w-4 h-4 text-zinc-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                </svg>
+                <i class="mdi mdi-cog-outline text-base text-zinc-400 shrink-0"></i>
                 <span>Configurações do Perfil</span>
             </button>
 
             <a href="/auth/logout"
                title="Encerrar sessão"
                class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-rose-300 hover:bg-rose-500/10 font-medium text-xs transition-colors">
-                <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
+                <i class="mdi mdi-logout-variant text-base shrink-0"></i>
                 <span>Sair</span>
             </a>
         </div>
@@ -74,9 +96,7 @@
             <!-- Barra de Busca de Competências -->
             <div class="relative w-full max-w-md">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
+                    <i class="mdi mdi-magnify text-base"></i>
                 </span>
                 <input type="search"
                        id="filtro-competencia"
@@ -89,17 +109,15 @@
             <div class="flex items-center gap-3 shrink-0">
                 <!-- Seletor de Cliente Analisado -->
                 <div class="flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-xl">
-                    <svg class="w-4 h-4 text-[#79b5b9] shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
+                    <i class="mdi mdi-account-outline text-base text-[#79b5b9] shrink-0"></i>
                     <select aria-label="Selecionar segurado para análise"
                             onchange="if(this.value) window.location.href='/analise?cliente_id=' + this.value"
                             class="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2">
                         {% if clientes and clientes|length > 0 %}
                             {% for c in clientes %}
                             <option value="{{ c.id }}"
-                                    class="bg-[#1e1e1e] text-white"
-                                    {% if cliente_ativo and cliente_ativo.id == c.id %}selected{% endif %}>
+                                     class="bg-[#1e1e1e] text-white"
+                                     {% if cliente_ativo and cliente_ativo.id == c.id %}selected{% endif %}>
                                 {{ c.nome }} ({{ c.contribuicoes|length }} comp.)
                             </option>
                             {% endfor %}
@@ -116,6 +134,8 @@
                     <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
                         {% if tem_avatar %}
                         <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
+                        {% elif avatar_url %}
+                        <img src="{{ avatar_url }}" alt="Foto de perfil Google" class="w-full h-full object-cover">
                         {% else %}
                         {{ (usuario_nome or usuario_email)[0]|upper }}
                         {% endif %}
@@ -626,7 +646,95 @@
         </div>
     </dialog>
 
+    {% if planos %}
+    <!-- Modal de Planos (3 Tiers) e Integração Asaas -->
+    <dialog id="modal-planos" class="rounded-2xl p-0 backdrop:bg-black/80 bg-transparent shadow-2xl max-w-4xl w-full m-auto">
+        <div class="p-6 sm:p-8 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-white/[0.08]">
+                <div>
+                    <h3 class="text-base sm:text-lg font-bold text-white flex items-center gap-2">
+                        <i class="mdi mdi-crown-outline text-xl text-[#93a3ff]"></i>
+                        Planos e Franquia Mensal de Extratos CNIS
+                    </h3>
+                    <p class="text-xs text-zinc-400 mt-1">
+                        Arquivos inválidos (não-CNIS) não descontam da sua franquia comercial paga. Pagamento recorrente processado via Asaas.
+                    </p>
+                </div>
+                <button type="button"
+                        onclick="document.getElementById('modal-planos').close()"
+                        class="text-zinc-400 hover:text-white text-xs cursor-pointer px-3 py-1.5 rounded-lg hover:bg-[#252525] self-end sm:self-center">
+                    Fechar
+                </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {% for pl in planos %}
+                <form action="/assinaturas/assinar" method="POST"
+                      class="rounded-2xl p-5 flex flex-col justify-between space-y-5 border transition-all
+                      {% if pl.destaque %}bg-[#252525] border-[#2a389b] shadow-lg shadow-[#2a389b]/15{% else %}bg-[#161618] border-white/[0.08]{% endif %}">
+                    <input type="hidden" name="tier" value="{{ pl.codigo }}">
+
+                    <div class="space-y-3">
+                        <div class="flex items-center justify-between">
+                            <span class="w-9 h-9 rounded-xl bg-[#2a389b]/25 border border-[#2a389b]/40 text-[#93a3ff] flex items-center justify-center">
+                                <i class="mdi {{ pl.icone_mdi }} text-lg"></i>
+                            </span>
+                            {% if quota and quota.tier == pl.codigo %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#79b5b9]/20 text-[#79b5b9] border border-[#79b5b9]/40">
+                                Plano Atual
+                            </span>
+                            {% elif pl.destaque %}
+                            <span class="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-[#2a389b] text-white">
+                                Mais Escolhido
+                            </span>
+                            {% endif %}
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-bold text-white">{{ pl.nome }}</h4>
+                            <p class="text-[11px] text-zinc-400 mt-1 leading-relaxed">{{ pl.descricao }}</p>
+                        </div>
+
+                        <div class="pt-2 border-t border-white/[0.06]">
+                            <div class="text-2xl font-bold text-white font-mono">
+                                <span class="text-xs font-sans text-[#93a3ff]">R$</span> {{ pl.valor_mensal|moeda_br }}
+                                <span class="text-xs font-sans font-normal text-zinc-400">/mês</span>
+                            </div>
+                            <p class="text-xs font-semibold text-[#79b5b9] mt-1 flex items-center gap-1.5">
+                                <i class="mdi mdi-check-circle-outline"></i>
+                                {{ pl.limite_mensal }} extratos CNIS válidos / mês
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2.5 pt-2">
+                        <select name="forma_pagamento"
+                                aria-label="Forma de pagamento Asaas"
+                                class="w-full px-3 py-2 bg-[#121212] border border-white/10 rounded-xl text-[11px] text-zinc-200 focus:outline-none focus:border-[#2a389b]">
+                            <option value="PIX">PIX / QR Code (Asaas)</option>
+                            <option value="CREDIT_CARD">Cartão de Crédito</option>
+                            <option value="BOLETO">Boleto Bancário</option>
+                            <option value="UNDEFINED">Escolher no Checkout Asaas</option>
+                        </select>
+
+                        <button type="submit"
+                                class="w-full py-2.5 px-4 bg-[#2a389b] hover:bg-[#3444b8] text-white font-semibold text-xs rounded-xl transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-md">
+                            <i class="mdi mdi-shield-check-outline text-sm"></i>
+                            <span>{% if quota and quota.tier == pl.codigo %}Renovar Franquia{% else %}Assinar {{ pl.nome }}{% endif %}</span>
+                        </button>
+                    </div>
+                </form>
+                {% endfor %}
+            </div>
+        </div>
+    </dialog>
+    {% endif %}
+
     <script>
+        function abrirModalPlanos() {
+            const modal = document.getElementById('modal-planos');
+            if (modal) modal.showModal();
+        }
         function destacarPontoGrafico(x, y, competencia, valorFormatado) {
             const linhaGuia = document.getElementById('grafico-linha-guia');
             const pontoAtivo = document.getElementById('grafico-ponto-ativo');
