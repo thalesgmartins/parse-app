@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session, joinedload
 from app.core.schemas import CnisCompetencia
 from app.core.security import hash_password
 from app.database.models import Advogado, Cliente, Contribuicao, JobExtracao, LogExtracao
+from app.database.tenancy import ativar_schema_tenant, gerar_nome_schema
+from app.services.quotas import garantir_assinatura_advogado
 
 
 def obter_advogado_por_email(db: Session, email: str) -> Advogado | None:
@@ -50,7 +52,7 @@ def criar_advogado(
     email: str,
     senha: str,
 ) -> Advogado:
-    """Cadastra um novo advogado com senha criptografada.
+    """Cadastra um novo advogado com senha criptografada, schema e assinatura.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
@@ -61,14 +63,81 @@ def criar_advogado(
     Returns:
         Instância do novo Advogado cadastrado.
     """
+    novo_id = uuid.uuid4()
+    schema_tenant = gerar_nome_schema(novo_id)
     advogado = Advogado(
+        id=novo_id,
         nome=nome,
         email=email,
         senha_hash=hash_password(senha),
+        schema_name=schema_tenant,
     )
     db.add(advogado)
     db.commit()
     db.refresh(advogado)
+
+    garantir_assinatura_advogado(db, advogado.id)
+    ativar_schema_tenant(db, schema_name=schema_tenant, advogado_id=advogado.id)
+    return advogado
+
+
+def obter_ou_criar_advogado_google(
+    db: Session,
+    google_sub: str,
+    email: str,
+    nome: str,
+    avatar_url: str | None = None,
+) -> Advogado:
+    """Autentica ou provisiona um advogado a partir de identidade Google verificada.
+
+    Args:
+        db: Sessão ativa do SQLAlchemy.
+        google_sub: Identificador único imutável da conta Google ('sub').
+        email: E-mail verificado retornado pelo Google.
+        nome: Nome completo retornado pelo perfil Google.
+        avatar_url: URL da foto de perfil Google (opcional).
+
+    Returns:
+        Instância do Advogado autenticado e com schema multi-tenant ativo.
+    """
+    stmt_sub = select(Advogado).where(Advogado.google_sub == google_sub)
+    advogado = db.scalar(stmt_sub)
+
+    if not advogado:
+        advogado = obter_advogado_por_email(db, email=email)
+
+    if advogado:
+        alterou = False
+        if advogado.google_sub != google_sub:
+            advogado.google_sub = google_sub
+            alterou = True
+        if avatar_url and advogado.avatar_url != avatar_url:
+            advogado.avatar_url = avatar_url
+            alterou = True
+        if not advogado.schema_name:
+            advogado.schema_name = gerar_nome_schema(advogado.id)
+            alterou = True
+        if alterou:
+            db.commit()
+            db.refresh(advogado)
+    else:
+        novo_id = uuid.uuid4()
+        schema_tenant = gerar_nome_schema(novo_id)
+        advogado = Advogado(
+            id=novo_id,
+            nome=nome.strip() or email.split("@")[0],
+            email=email.strip().lower(),
+            senha_hash=hash_password(uuid.uuid4().hex),
+            schema_name=schema_tenant,
+            google_sub=google_sub,
+            avatar_url=avatar_url,
+        )
+        db.add(advogado)
+        db.commit()
+        db.refresh(advogado)
+
+    garantir_assinatura_advogado(db, advogado.id)
+    ativar_schema_tenant(db, schema_name=advogado.schema_name, advogado_id=advogado.id)
     return advogado
 
 
