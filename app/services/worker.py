@@ -20,6 +20,8 @@ from app.database.repository import (
     salvar_ou_atualizar_contribuicoes,
 )
 from app.database.session import SessionLocal
+from app.database.tenancy import ativar_schema_tenant
+from app.services.quotas import confirmar_consumo_credito, estornar_reserva_credito
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -27,6 +29,7 @@ _LOGGER = logging.getLogger(__name__)
 def processar_job_extracao(
     job_id: uuid.UUID | str,
     db: Session | None = None,
+    advogado_id: uuid.UUID | str | None = None,
 ) -> bool:
     """Processa um job de extração de PDF pendente na fila.
 
@@ -37,6 +40,7 @@ def processar_job_extracao(
     Args:
         job_id: Identificador único do trabalho de extração.
         db: Sessão opcional do SQLAlchemy (se omitida, uma nova é criada).
+        advogado_id: Identificador do advogado proprietário para isolar o schema.
 
     Returns:
         True se o job foi processado com sucesso, False se já bloqueado ou falhou.
@@ -51,10 +55,16 @@ def processar_job_extracao(
     caminho_arquivo: Path | None = None
 
     try:
+        if owns_session and advogado_id:
+            ativar_schema_tenant(session, advogado_id=advogado_id)
+
         job = bloquear_job_para_processamento(session, id_uuid)
         if not job:
             _LOGGER.info("Job %s já bloqueado ou não está pendente.", id_uuid)
             return False
+
+        if owns_session and not advogado_id:
+            ativar_schema_tenant(session, advogado_id=job.advogado_id)
 
         if job.caminho_arquivo_temp:
             caminho_arquivo = Path(job.caminho_arquivo_temp)
@@ -108,21 +118,35 @@ def processar_job_extracao(
             job_id=job.id,
             total_competencias=len(dados),
         )
+        confirmar_consumo_credito(session, job.advogado_id)
         _LOGGER.info("Job %s concluído: %d competências.", id_uuid, len(dados))
         return True
 
     except Exception as exc:
         _LOGGER.error("Falha ao processar job %s: %s", id_uuid, exc)
-        job_falha = obter_job_por_id(session, id_uuid)
-        if job_falha:
-            registrar_log_extracao(
-                db=session,
-                advogado_id=job_falha.advogado_id,
-                nome_arquivo=job_falha.nome_arquivo,
-                status="erro",
-                mensagem_erro=str(exc),
-            )
-            falhar_job(session, id_uuid, mensagem_erro=str(exc))
+        try:
+            session.rollback()
+            if owns_session and advogado_id:
+                ativar_schema_tenant(session, advogado_id=advogado_id)
+            job_falha = obter_job_por_id(session, id_uuid)
+            if job_falha:
+                eh_nao_cnis = "Nenhuma competência" in str(exc)
+                estornar_reserva_credito(
+                    session,
+                    job_falha.advogado_id,
+                    arquivo_invalido=eh_nao_cnis,
+                )
+                registrar_log_extracao(
+                    db=session,
+                    advogado_id=job_falha.advogado_id,
+                    nome_arquivo=job_falha.nome_arquivo,
+                    status="erro",
+                    mensagem_erro=str(exc),
+                )
+                falhar_job(session, id_uuid, mensagem_erro=str(exc))
+        except Exception as err_interno:
+            _LOGGER.error("Erro ao registrar falha do job %s: %s", id_uuid, err_interno)
+            session.rollback()
         return False
 
     finally:

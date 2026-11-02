@@ -32,6 +32,11 @@ from app.database.repository import (
 from app.database.session import get_db
 from app.services.analytics import formatar_moeda_br
 from app.services.export import gerar_csv_contribuicoes
+from app.services.quotas import (
+    LimiteAbusoDiarioError,
+    QuotaInsuficienteError,
+    reservar_creditos_extracao,
+)
 from app.services.worker import processar_job_extracao
 
 router = APIRouter(prefix="/cnis", tags=["Processamento CNIS"])
@@ -103,6 +108,13 @@ async def extrair_documento_cnis(
             detail="Apenas arquivos no formato PDF são aceitos para análise do CNIS.",
         )
 
+    try:
+        reservar_creditos_extracao(db, usuario.id, quantidade=1)
+    except QuotaInsuficienteError as quota_err:
+        raise HTTPException(status_code=402, detail=str(quota_err)) from quota_err
+    except LimiteAbusoDiarioError as abuso_err:
+        raise HTTPException(status_code=429, detail=str(abuso_err)) from abuso_err
+
     job_id = uuid.uuid4()
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
@@ -136,7 +148,11 @@ async def extrair_documento_cnis(
         caminho_arquivo_temp=str(caminho_temp),
     )
 
-    background_tasks.add_task(processar_job_extracao, job_id=job.id)
+    background_tasks.add_task(
+        processar_job_extracao,
+        job_id=job.id,
+        advogado_id=usuario.id,
+    )
 
     return {
         "status": "pending",
@@ -156,13 +172,19 @@ def _enfileirar_lote_pdfs(
     """Salva e enfileira múltiplos arquivos PDF para processamento assíncrono."""
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     jobs_criados: list[JobExtracao] = []
+    arquivos_pdf = [
+        arq
+        for arq in arquivos
+        if (arq.filename or "").lower().endswith(".pdf")
+        or (arq.content_type or "") == "application/pdf"
+    ]
+    if not arquivos_pdf:
+        return []
 
-    for arq in arquivos:
+    reservar_creditos_extracao(db, usuario.id, quantidade=len(arquivos_pdf))
+
+    for arq in arquivos_pdf:
         nome_orig = arq.filename or "extrato.pdf"
-        ctype = arq.content_type or ""
-        if not nome_orig.lower().endswith(".pdf") and ctype != "application/pdf":
-            continue
-
         job_id = uuid.uuid4()
         caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
         try:
@@ -178,7 +200,11 @@ def _enfileirar_lote_pdfs(
             cliente_id=cli_uuid,
             caminho_arquivo_temp=str(caminho_temp),
         )
-        background_tasks.add_task(processar_job_extracao, job_id=job.id)
+        background_tasks.add_task(
+            processar_job_extracao,
+            job_id=job.id,
+            advogado_id=usuario.id,
+        )
         jobs_criados.append(job)
 
     return jobs_criados
@@ -214,13 +240,23 @@ async def extrair_documento_cnis_html(
             cli_uuid = None
 
     if len(arquivo) > 1:
-        jobs_lote = _enfileirar_lote_pdfs(
-            arquivos=arquivo,
-            usuario=usuario,
-            db=db,
-            background_tasks=background_tasks,
-            cli_uuid=cli_uuid,
-        )
+        try:
+            jobs_lote = _enfileirar_lote_pdfs(
+                arquivos=arquivo,
+                usuario=usuario,
+                db=db,
+                background_tasks=background_tasks,
+                cli_uuid=cli_uuid,
+            )
+        except (QuotaInsuficienteError, LimiteAbusoDiarioError) as err_quota:
+            return templates.TemplateResponse(
+                request=request,
+                name="tabela_resultados.html",
+                context={
+                    "erro": str(err_quota),
+                    "quota_excedida": isinstance(err_quota, QuotaInsuficienteError),
+                },
+            )
         if not jobs_lote:
             return templates.TemplateResponse(
                 request=request,
@@ -253,6 +289,18 @@ async def extrair_documento_cnis_html(
             context={"erro": "Apenas arquivos no formato PDF são aceitos para análise do CNIS."},
         )
 
+    try:
+        reservar_creditos_extracao(db, usuario.id, quantidade=1)
+    except (QuotaInsuficienteError, LimiteAbusoDiarioError) as err_quota:
+        return templates.TemplateResponse(
+            request=request,
+            name="tabela_resultados.html",
+            context={
+                "erro": str(err_quota),
+                "quota_excedida": isinstance(err_quota, QuotaInsuficienteError),
+            },
+        )
+
     job_id = uuid.uuid4()
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     caminho_temp = UPLOAD_DIR / f"{job_id}.pdf"
@@ -281,7 +329,11 @@ async def extrair_documento_cnis_html(
         caminho_arquivo_temp=str(caminho_temp),
     )
 
-    background_tasks.add_task(processar_job_extracao, job_id=job.id)
+    background_tasks.add_task(
+        processar_job_extracao,
+        job_id=job.id,
+        advogado_id=usuario.id,
+    )
 
     return templates.TemplateResponse(
         request=request,

@@ -12,6 +12,60 @@ _LOGGER = logging.getLogger(__name__)
 
 RE_DATA = re.compile(r"^\d{2}/\d{4}$")
 RE_VALOR_BR = re.compile(r"^(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}$")
+_TERMOS_CABECALHO_CNIS = (
+    "CNIS",
+    "CADASTRO NACIONAL DE INFORMA",
+    "PREVIDENCIA SOCIAL",
+    "PREVIDÊNCIA SOCIAL",
+    "RELACOES PREVIDENCIARIAS",
+    "RELAÇÕES PREVIDENCIÁRIAS",
+    "INSS",
+    "NIT",
+    "REMUNERACOES",
+    "REMUNERAÇÕES",
+)
+
+
+def validar_texto_cabecalho_cnis(texto: str) -> bool:
+    """Verifica rapidamente se o texto inicial contém marcadores de um extrato CNIS.
+
+    Args:
+        texto: Conteúdo textual extraído da primeira página do documento.
+
+    Returns:
+        True se contiver marcadores oficiais do CNIS/INSS ou pares de competência.
+    """
+    if not texto or not texto.strip():
+        return False
+    texto_upper = texto.upper()
+    if any(termo in texto_upper for termo in _TERMOS_CABECALHO_CNIS):
+        return True
+    return len(processar_linhas_cnis(texto.split("\n"))) > 0
+
+
+def validar_cabecalho_cnis_rapido(caminho_arquivo: Path | str) -> bool:
+    """Inspeciona apenas a primeira página do PDF para rejeição rápida (Fail-Fast).
+
+    Evita processar dezenas de páginas em PDFs que não são extratos previdenciários.
+
+    Args:
+        caminho_arquivo: Caminho para o arquivo PDF no disco.
+
+    Returns:
+        True se a Página 1 apresentar estrutura compatível com o CNIS, False caso contrário.
+    """
+    caminho = Path(caminho_arquivo)
+    if not caminho.exists():
+        return False
+    try:
+        with pdfplumber.open(caminho) as pdf:
+            if not pdf.pages:
+                return False
+            texto_pag1 = pdf.pages[0].extract_text() or ""
+            return validar_texto_cabecalho_cnis(texto_pag1)
+    except Exception as exc:
+        _LOGGER.debug("Falha na pré-validação rápida da página 1 (%s): %s", caminho, exc)
+        return False
 
 
 def processar_linhas_cnis(linhas: list[str]) -> list[CnisCompetencia]:
@@ -83,6 +137,9 @@ def _chave_ordenacao_competencia(item: CnisCompetencia) -> tuple[int, int]:
 def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
     """Extrai texto de todas as páginas do PDF e processa as competências.
 
+    Realiza validação rápida (Fail-Fast) na primeira página para abortar
+    imediatamente a leitura caso o documento não seja um extrato CNIS.
+
     Args:
         caminho_arquivo: Caminho do arquivo PDF do extrato CNIS a ser lido.
 
@@ -93,7 +150,15 @@ def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
     todas_as_linhas: list[str] = []
 
     with pdfplumber.open(caminho) as pdf:
-        for pagina in pdf.pages:
+        if not pdf.pages:
+            return []
+        texto_pag1 = pdf.pages[0].extract_text() or ""
+        if not validar_texto_cabecalho_cnis(texto_pag1):
+            _LOGGER.info("Fail-Fast: Página 1 de %s não contém cabeçalho CNIS.", caminho.name)
+            return []
+        todas_as_linhas.extend(texto_pag1.split("\n"))
+
+        for pagina in pdf.pages[1:]:
             texto = pagina.extract_text()
             if texto:
                 todas_as_linhas.extend(texto.split("\n"))

@@ -28,6 +28,7 @@ from app.services.analytics import (
     construir_painel_analise,
     formatar_moeda_br,
 )
+from app.services.quotas import listar_planos_comerciais, obter_resumo_quota
 
 router = APIRouter(tags=["Frontend"])
 _TEMPLATES_DIR = Path(__file__).resolve().parent.parent / "web" / "templates"
@@ -139,6 +140,8 @@ async def renderizar_dashboard(
             advogado_id=usuario.id,
         )
         metricas_fila = _calcular_metricas_fila(jobs_do_advogado)
+        quota_resumo = obter_resumo_quota(db=db, advogado_id=usuario.id)
+        planos_comerciais = listar_planos_comerciais()
 
         return templates.TemplateResponse(
             request=request,
@@ -147,10 +150,16 @@ async def renderizar_dashboard(
                 "clientes": clientes_do_advogado,
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
+                "usuario_schema": usuario.schema_name,
                 "tem_avatar": usuario_possui_avatar(usuario.id),
+                "avatar_url": usuario.avatar_url,
                 "total_extracos": total_extracos,
                 "jobs": jobs_do_advogado,
                 "metricas_fila": metricas_fila,
+                "quota": quota_resumo,
+                "planos": planos_comerciais,
+                "sucesso_plano": request.query_params.get("sucesso_plano"),
+                "erro_plano": request.query_params.get("erro_plano"),
             },
         )
     except HTTPException:
@@ -198,6 +207,8 @@ async def renderizar_analise_cnis(
             job_id_str=job_id,
         )
         painel = construir_painel_analise(contribuicoes)
+        quota_resumo = obter_resumo_quota(db=db, advogado_id=usuario.id)
+        planos_comerciais = listar_planos_comerciais()
 
         return templates.TemplateResponse(
             request=request,
@@ -205,7 +216,9 @@ async def renderizar_analise_cnis(
             context={
                 "usuario_nome": usuario.nome,
                 "usuario_email": usuario.email,
+                "usuario_schema": usuario.schema_name,
                 "tem_avatar": usuario_possui_avatar(usuario.id),
+                "avatar_url": usuario.avatar_url,
                 "clientes": clientes_do_advogado,
                 "jobs": jobs_do_advogado,
                 "total_extracos": total_extracos,
@@ -214,6 +227,8 @@ async def renderizar_analise_cnis(
                 "painel": painel,
                 "meses_labels": MESES_LABELS,
                 "teto_inss": TETO_INSS_REFERENCIA,
+                "quota": quota_resumo,
+                "planos": planos_comerciais,
             },
         )
     except HTTPException:
