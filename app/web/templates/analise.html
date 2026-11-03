@@ -5,20 +5,81 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParseApp — Estatísticas e Análise do CNIS</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
-    <link rel="stylesheet" href="/static/css/tailwind.min.css?v=0.10.1">
-    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css?v=0.10.1">
+    <link rel="stylesheet" href="/static/css/tailwind.min.css?v=0.10.2">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css?v=0.10.2">
     <script src="/static/js/htmx.min.js"></script>
+    <style>
+        /* Regras explícitas para garantir funcionamento perfeito do Drawer Mobile */
+        @media (max-width: 767px) {
+            #sidebar-principal {
+                position: fixed !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 280px !important;
+                max-width: 82vw !important;
+                height: 100vh !important;
+                z-index: 50 !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.25s ease-in-out !important;
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6) !important;
+            }
+            #sidebar-principal.sidebar-aberta {
+                transform: translateX(0) !important;
+            }
+            #sidebar-backdrop {
+                position: fixed !important;
+                inset: 0 !important;
+                background-color: rgba(0, 0, 0, 0.75) !important;
+                backdrop-filter: blur(4px) !important;
+                z-index: 40 !important;
+                display: none;
+            }
+            #sidebar-backdrop.backdrop-ativo {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            #sidebar-principal {
+                position: sticky !important;
+                top: 0 !important;
+                height: 100vh !important;
+                transform: none !important;
+                width: 16rem !important;
+                flex-shrink: 0 !important;
+                display: flex !important;
+            }
+            #sidebar-backdrop {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
-<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
+<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex flex-col md:flex-row relative">
 
-    <!-- Sidebar Fixa e Padronizada à Esquerda (Idêntica à Tela de Dashboard) -->
-    <aside class="w-64 shrink-0 bg-[#181818] border-r border-white/[0.06] flex flex-col justify-between min-h-screen sticky top-0 h-screen px-4 py-6 select-none">
+    <!-- Backdrop escuro para fechar a sidebar no mobile -->
+    <div id="sidebar-backdrop"
+         onclick="fecharSidebarMobile()"
+         class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden transition-opacity md:hidden"></div>
 
-        <div class="space-y-8">
-            <a href="/dashboard" class="flex items-center gap-3 px-3">
-                <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
-                <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
-            </a>
+    <!-- Sidebar Fixa e Padronizada à Esquerda (Drawer no mobile) -->
+    <aside id="sidebar-principal"
+           class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#181818] border-r border-white/[0.08] flex flex-col justify-between h-full px-4 py-6 select-none -translate-x-full transition-transform duration-300 ease-in-out md:static md:w-64 md:shrink-0 md:translate-x-0 md:h-screen md:sticky md:top-0">
+
+        <div class="space-y-6">
+            <div class="flex items-center justify-between px-3">
+                <a href="/dashboard" class="flex items-center gap-3">
+                    <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
+                    <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
+                </a>
+                <button type="button"
+                        onclick="fecharSidebarMobile()"
+                        aria-label="Fechar Menu Lateral"
+                        class="md:hidden p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-[#252525] cursor-pointer">
+                    <i class="mdi mdi-close text-xl"></i>
+                </button>
+            </div>
 
             <nav class="space-y-1.5">
                 <a href="/dashboard"
@@ -56,7 +117,12 @@
                 </div>
 
                 <div class="flex items-center justify-between text-[10px] text-zinc-400">
-                    <span>{{ quota.creditos_restantes }} restantes no mês</span>
+                    <span>{{ quota.creditos_restantes }} restantes</span>
+                    {% if quota.cancelamento_agendado %}
+                    <span class="text-amber-400 font-medium">Cancelamento agendado</span>
+                    {% elif quota.ciclo_fim_formatado %}
+                    <span>até {{ quota.ciclo_fim_formatado }}</span>
+                    {% endif %}
                 </div>
 
                 <button type="button"
@@ -72,7 +138,7 @@
         <!-- Rodapé da Sidebar: Configurações da Conta e Logout -->
         <div class="space-y-2 pt-4 border-t border-white/[0.06]">
             <button type="button"
-                    onclick="document.getElementById('modal-perfil').showModal()"
+                    onclick="fecharSidebarMobile(); document.getElementById('modal-perfil').showModal();"
                     class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
                 <i class="mdi mdi-cog-outline text-base text-zinc-400 shrink-0"></i>
                 <span>Configurações do Perfil</span>
@@ -90,29 +156,29 @@
     <!-- Conteúdo Principal -->
     <div class="flex-1 flex flex-col min-w-0">
 
-        <!-- Header Superior: Busca, Seletor de Segurado e Avatar Clicável -->
-        <header class="h-18 px-6 lg:px-10 py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex flex-wrap items-center justify-between gap-4">
+        <!-- Header Superior: Hamburger Mobile, Busca, Seletor de Segurado e Avatar -->
+        <header class="min-h-16 px-4 sm:px-6 lg:px-10 py-3 sm:py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 sm:gap-4">
 
-            <!-- Barra de Busca de Competências -->
-            <div class="relative w-full max-w-md">
-                <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
-                    <i class="mdi mdi-magnify text-base"></i>
-                </span>
-                <input type="search"
-                       id="filtro-competencia"
-                       oninput="filtrarTabelaCompetencias(this.value)"
-                       placeholder="Filtrar por competência (ex: 07/2021, 2023) ou valor..."
-                       class="w-full pl-10 pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
-            </div>
+            <!-- Linha Superior Mobile: Hamburger, Logo Compacto e Seletor de Segurado -->
+            <div class="flex items-center justify-between gap-2.5 sm:gap-4">
+                <div class="flex items-center gap-2.5 shrink-0">
+                    <button type="button"
+                            onclick="abrirSidebarMobile()"
+                            aria-label="Abrir Menu Lateral"
+                            class="md:hidden p-2 text-zinc-300 hover:text-white bg-[#1e1e1e] border border-white/10 rounded-xl cursor-pointer">
+                        <i class="mdi mdi-menu text-xl"></i>
+                    </button>
+                    <a href="/dashboard" class="flex items-center gap-2 md:hidden">
+                        <img src="/static/images/parse-logo.png" alt="Logo" class="w-7 h-7 rounded-md object-contain border border-white/10">
+                    </a>
+                </div>
 
-            <!-- Controles à Direita: Seletor de Segurado e Perfil -->
-            <div class="flex items-center gap-3 shrink-0">
                 <!-- Seletor de Cliente Analisado -->
-                <div class="flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-xl">
+                <div class="flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-xl flex-1 sm:flex-initial max-w-[280px]">
                     <i class="mdi mdi-account-outline text-base text-[#79b5b9] shrink-0"></i>
                     <select aria-label="Selecionar segurado para análise"
                             onchange="if(this.value) window.location.href='/analise?cliente_id=' + this.value"
-                            class="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2">
+                            class="bg-transparent text-xs font-semibold text-white focus:outline-none cursor-pointer pr-2 truncate w-full">
                         {% if clientes and clientes|length > 0 %}
                             {% for c in clientes %}
                             <option value="{{ c.id }}"
@@ -127,10 +193,41 @@
                     </select>
                 </div>
 
+                <!-- Avatar Mobile -->
                 <button type="button"
                         onclick="document.getElementById('modal-perfil').showModal()"
                         title="Clique para alterar foto, nome ou senha"
-                        class="flex items-center gap-3 group cursor-pointer text-left rounded-full p-1 pr-2 hover:bg-[#1e1e1e] transition-colors">
+                        class="sm:hidden flex items-center group cursor-pointer text-left rounded-full p-1 hover:bg-[#1e1e1e] transition-colors shrink-0">
+                    <div class="w-8 h-8 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
+                        {% if tem_avatar %}
+                        <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
+                        {% elif avatar_url %}
+                        <img src="{{ avatar_url }}" alt="Foto de perfil Google" class="w-full h-full object-cover">
+                        {% else %}
+                        {{ (usuario_nome or usuario_email)[0]|upper }}
+                        {% endif %}
+                    </div>
+                </button>
+            </div>
+
+            <!-- Barra de Busca de Competências e Avatar Desktop -->
+            <div class="flex items-center gap-3 sm:gap-4 flex-1 justify-end">
+                <div class="relative w-full max-w-md">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
+                        <i class="mdi mdi-magnify text-base"></i>
+                    </span>
+                    <input type="search"
+                           id="filtro-competencia"
+                           oninput="filtrarTabelaCompetencias(this.value)"
+                           placeholder="Filtrar competência (ex: 07/2021) ou valor..."
+                           class="w-full pl-10 pr-3 sm:pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
+                </div>
+
+                <!-- Avatar Desktop -->
+                <button type="button"
+                        onclick="document.getElementById('modal-perfil').showModal()"
+                        title="Clique para alterar foto, nome ou senha"
+                        class="hidden sm:flex items-center gap-2.5 group cursor-pointer text-left rounded-full p-1 pr-2 hover:bg-[#1e1e1e] transition-colors shrink-0">
                     <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
                         {% if tem_avatar %}
                         <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
@@ -140,7 +237,7 @@
                         {{ (usuario_nome or usuario_email)[0]|upper }}
                         {% endif %}
                     </div>
-                    <div class="hidden sm:flex flex-col">
+                    <div class="flex flex-col">
                         <span class="text-xs font-semibold text-white group-hover:text-[#93a3ff] transition-colors">
                             {{ usuario_nome or 'Advogado(a)' }}
                         </span>
@@ -151,75 +248,75 @@
         </header>
 
         <!-- Área de Conteúdo: KPIs + Gráficos + Tabela -->
-        <main class="p-6 lg:p-10 space-y-6 max-w-7xl w-full mx-auto">
+        <main class="p-4 sm:p-6 lg:p-10 space-y-6 max-w-7xl w-full mx-auto">
 
-            <!-- Linha 1: 4 Cartões de KPIs -->
-            <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <!-- Linha 1: 4 Cartões de KPIs em Grid 2x2 no Mobile e 4 Colunas no Desktop -->
+            <section class="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-5">
 
                 <!-- KPI 1: Remuneração Média -->
-                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-medium text-zinc-400">Remuneração Média</span>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
-                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="bg-[#1e1e1e] rounded-[18px] p-3.5 sm:p-5 border border-white/[0.06] flex flex-col justify-between space-y-2 sm:space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <span class="text-[11px] sm:text-xs font-medium text-zinc-400 truncate">Remuneração Média</span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40 self-start sm:self-auto">
+                            <svg class="w-2.5 h-2.5 sm:w-3 sm:h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                             </svg>
                             {{ "%+.1f"|format(painel.variacao_geral_pct) }}%
                         </span>
                     </div>
-                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                    <div class="text-base sm:text-2xl lg:text-[26px] font-bold tracking-tight text-white font-mono truncate">
                         <span class="text-[#2a389b] font-sans font-extrabold mr-0.5">R$</span>{{ painel.media_salarial|moeda_br }}
                     </div>
-                    <p class="text-[11px] text-zinc-500 font-mono">
-                        De {{ painel.periodo_inicio }} até {{ painel.periodo_fim }}
+                    <p class="text-[10px] sm:text-[11px] text-zinc-500 font-mono truncate">
+                        {{ painel.periodo_inicio }} &rarr; {{ painel.periodo_fim }}
                     </p>
                 </div>
 
                 <!-- KPI 2: Total de Competências / Vínculos -->
-                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-medium text-zinc-400">Total de Vínculos / Meses</span>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                <div class="bg-[#1e1e1e] rounded-[18px] p-3.5 sm:p-5 border border-white/[0.06] flex flex-col justify-between space-y-2 sm:space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <span class="text-[11px] sm:text-xs font-medium text-zinc-400 truncate">Total Vínculos / Meses</span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40 self-start sm:self-auto">
                             {{ painel.tempo_contribuicao }}
                         </span>
                     </div>
-                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                    <div class="text-base sm:text-2xl lg:text-[26px] font-bold tracking-tight text-white font-mono">
                         {{ painel.total_competencias }}
                     </div>
-                    <p class="text-[11px] text-zinc-500">
-                        Competências auditadas no CNIS
+                    <p class="text-[10px] sm:text-[11px] text-zinc-500 truncate">
+                        Competências auditadas
                     </p>
                 </div>
 
                 <!-- KPI 3: Teto Previdenciário Atingido -->
-                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-medium text-zinc-400">Teto Previdenciário Atingido</span>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                <div class="bg-[#1e1e1e] rounded-[18px] p-3.5 sm:p-5 border border-white/[0.06] flex flex-col justify-between space-y-2 sm:space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <span class="text-[11px] sm:text-xs font-medium text-zinc-400 truncate">Teto INSS Atingido</span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40 self-start sm:self-auto">
                             {{ "%.1f"|format(painel.percentual_teto_medio) }}%
                         </span>
                     </div>
-                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
-                        {{ painel.atingiu_teto_count }} <span class="text-sm font-sans font-normal text-zinc-400">comp.</span>
+                    <div class="text-base sm:text-2xl lg:text-[26px] font-bold tracking-tight text-white font-mono">
+                        {{ painel.atingiu_teto_count }} <span class="text-xs sm:text-sm font-sans font-normal text-zinc-400">comp.</span>
                     </div>
-                    <p class="text-[11px] text-zinc-500 font-mono">
-                        Pico: R$ {{ painel.maior_remuneracao|moeda_br }} ({{ painel.competencia_maior }})
+                    <p class="text-[10px] sm:text-[11px] text-zinc-500 font-mono truncate" title="Pico: R$ {{ painel.maior_remuneracao|moeda_br }} ({{ painel.competencia_maior }})">
+                        Pico: R$ {{ painel.maior_remuneracao|moeda_br }}
                     </p>
                 </div>
 
                 <!-- KPI 4: Total de Clientes / Base Consolidada -->
-                <div class="bg-[#1e1e1e] rounded-[18px] p-5 border border-white/[0.06] flex flex-col justify-between space-y-4">
-                    <div class="flex items-center justify-between gap-2">
-                        <span class="text-xs font-medium text-zinc-400">Total de Clientes</span>
-                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                <div class="bg-[#1e1e1e] rounded-[18px] p-3.5 sm:p-5 border border-white/[0.06] flex flex-col justify-between space-y-2 sm:space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-1 sm:gap-2">
+                        <span class="text-[11px] sm:text-xs font-medium text-zinc-400 truncate">Total de Clientes</span>
+                        <span class="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-lg text-[10px] sm:text-[11px] font-mono font-semibold bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40 self-start sm:self-auto">
                             {{ total_extracos }} PDFs
                         </span>
                     </div>
-                    <div class="text-2xl sm:text-[26px] font-bold tracking-tight text-white font-mono">
+                    <div class="text-base sm:text-2xl lg:text-[26px] font-bold tracking-tight text-white font-mono">
                         {{ clientes|length }}
                     </div>
-                    <p class="text-[11px] text-zinc-500 font-mono">
-                        Soma: R$ {{ painel.soma_remuneracoes|moeda_br }}
+                    <p class="text-[10px] sm:text-[11px] text-zinc-500 font-mono truncate">
+                        R$ {{ painel.soma_remuneracoes|moeda_br }}
                     </p>
                 </div>
 
@@ -229,7 +326,7 @@
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
 
                 <!-- Card Esquerdo (5 colunas): Mapa de Densidade Contributiva por Período -->
-                <div class="lg:col-span-5 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] flex flex-col justify-between space-y-5">
+                <div class="lg:col-span-5 bg-[#1e1e1e] rounded-[20px] p-4 sm:p-6 border border-white/[0.06] flex flex-col justify-between space-y-4 sm:space-y-5">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <h2 class="text-sm font-bold text-white">Densidade Contributiva</h2>
@@ -284,20 +381,20 @@
                 </div>
 
                 <!-- Card Direito (7 colunas): Gráfico Interativo de Linhas de Evolução Salarial -->
-                <div class="lg:col-span-7 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] flex flex-col justify-between space-y-4">
+                <div class="lg:col-span-7 bg-[#1e1e1e] rounded-[20px] p-4 sm:p-6 border border-white/[0.06] flex flex-col justify-between space-y-4">
                     <div class="flex flex-wrap items-center justify-between gap-2">
                         <div>
                             <h2 class="text-sm font-bold text-white">Evolução e Variação Salarial</h2>
                             <p class="text-[11px] text-zinc-400">
                                 {% if cliente_ativo %}
-                                    Segurado: <strong class="text-zinc-200">{{ cliente_ativo.nome }}</strong> &bull; Passe o mouse sobre o gráfico para inspecionar
+                                    Segurado: <strong class="text-zinc-200">{{ cliente_ativo.nome }}</strong> &bull; Toque ou passe o mouse para inspecionar
                                 {% else %}
-                                    Passe o mouse ao longo da curva para inspecionar cada competência
+                                    Toque ou passe o mouse sobre a curva para inspecionar cada mês
                                 {% endif %}
                             </p>
                         </div>
 
-                        <div class="flex items-center gap-4 text-xs">
+                        <div class="flex items-center gap-3 sm:gap-4 text-xs">
                             <span class="inline-flex items-center gap-1.5 text-zinc-300">
                                 <span class="w-3 h-0.5 bg-[#2a389b] inline-block"></span>
                                 Remuneração
@@ -309,9 +406,9 @@
                         </div>
                     </div>
 
-                    <!-- Gráfico SVG Interativo ao Passar o Mouse -->
-                    <div class="relative w-full pt-2">
-                        <svg id="svg-evolucao-cnis" viewBox="0 0 720 250" class="w-full h-56 overflow-visible select-none">
+                    <!-- Gráfico SVG Interativo ao Passar o Mouse ou Tocar -->
+                    <div class="relative w-full pt-2 overflow-x-auto">
+                        <svg id="svg-evolucao-cnis" viewBox="0 0 720 250" class="w-full min-w-[500px] sm:min-w-0 h-56 select-none">
                             <defs>
                                 <linearGradient id="gradienteAzulCnis" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stop-color="#2a389b" stop-opacity="0.45"/>
@@ -400,7 +497,7 @@
                                 </text>
                                 {% endfor %}
 
-                                <!-- Faixas Invisíveis de Captura de Hover para Cada Ponto da Série -->
+                                <!-- Faixas Invisíveis de Captura de Hover/Touch para Cada Ponto da Série -->
                                 {% set col_w = (620 / (painel.grafico.pontos|length)) if (painel.grafico.pontos|length) > 0 else 60 %}
                                 {% for pt in painel.grafico.pontos %}
                                 <rect x="{{ pt.x - (col_w / 2) }}"
@@ -409,7 +506,8 @@
                                       height="215"
                                       fill="transparent"
                                       class="cursor-crosshair"
-                                      onmouseenter="destacarPontoGrafico({{ pt.x }}, {{ pt.y }}, '{{ pt.competencia }}', '{{ pt.valor|moeda_br }}')"/>
+                                      onmouseenter="destacarPontoGrafico({{ pt.x }}, {{ pt.y }}, '{{ pt.competencia }}', '{{ pt.valor|moeda_br }}')"
+                                      ontouchstart="destacarPontoGrafico({{ pt.x }}, {{ pt.y }}, '{{ pt.competencia }}', '{{ pt.valor|moeda_br }}')"/>
                                 {% endfor %}
                             {% else %}
                                 <text x="365" y="125" text-anchor="middle" fill="#71717a" font-size="12">
@@ -426,7 +524,7 @@
             <section class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
                 <!-- Card Esquerdo (4 colunas): Resumo Anual Contributivo -->
-                <div class="lg:col-span-4 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-5">
+                <div class="lg:col-span-4 bg-[#1e1e1e] rounded-[20px] p-4 sm:p-6 border border-white/[0.06] space-y-4 sm:space-y-5">
                     <div class="flex items-center justify-between">
                         <div>
                             <h2 class="text-sm font-bold text-white">Salários por Ano</h2>
@@ -440,7 +538,7 @@
                     {% if painel.resumos_anuais and painel.resumos_anuais|length > 0 %}
                     <div class="grid grid-cols-2 gap-3">
                         {% for resumo in painel.resumos_anuais %}
-                        <div class="bg-[#252525] rounded-2xl p-3.5 border border-white/[0.05] space-y-2 hover:border-[#2a389b]/50 transition-colors">
+                        <div class="bg-[#252525] rounded-2xl p-3 sm:p-3.5 border border-white/[0.05] space-y-2 hover:border-[#2a389b]/50 transition-colors">
                             <div class="flex items-center justify-between">
                                 <span class="px-2 py-0.5 rounded-md bg-[#2a389b]/30 text-[#93a3ff] font-mono text-[11px] font-bold">
                                     {{ resumo.ano }}
@@ -450,7 +548,7 @@
                                 </span>
                             </div>
                             <p class="text-xs text-zinc-400">Média mensal</p>
-                            <p class="text-sm font-bold text-white font-mono">
+                            <p class="text-xs sm:text-sm font-bold text-white font-mono">
                                 R$ {{ resumo.media_valor|moeda_br }}
                             </p>
                         </div>
@@ -464,7 +562,7 @@
                 </div>
 
                 <!-- Card Direito (8 colunas): Tabela de Competências e Remunerações Validadas -->
-                <div id="tabela-competencias-card" class="lg:col-span-8 bg-[#1e1e1e] rounded-[20px] p-6 border border-white/[0.06] space-y-5">
+                <div id="tabela-competencias-card" class="lg:col-span-8 bg-[#1e1e1e] rounded-[20px] p-4 sm:p-6 border border-white/[0.06] space-y-4 sm:space-y-5">
                     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div>
                             <h2 class="text-sm font-bold text-white">Competências e Remunerações</h2>
@@ -473,7 +571,7 @@
                             </p>
                         </div>
 
-                        <div class="flex items-center gap-2">
+                        <div class="flex flex-wrap items-center gap-2">
                             <button type="button"
                                     onclick="copiarTabelaAnalise(this)"
                                     class="px-3 py-1.5 bg-[#252525] hover:bg-zinc-700 text-zinc-200 text-xs font-semibold rounded-xl border border-white/10 transition-colors cursor-pointer">
@@ -566,8 +664,8 @@
     </div>
 
     <!-- Modal de Configurações do Perfil (Foto, Nome e Senha) -->
-    <dialog id="modal-perfil" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto">
-        <div class="p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
+    <dialog id="modal-perfil" style="max-width: 28rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto my-auto max-h-[92vh] overflow-y-auto">
+        <div class="p-5 sm:p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
@@ -662,7 +760,7 @@
 
     {% if planos %}
     <!-- Modal de Planos (3 Tiers) -->
-    <dialog id="modal-planos" style="max-width: 46rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-4xl w-full m-auto">
+    <dialog id="modal-planos" style="max-width: 46rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-4xl w-full m-auto my-auto max-h-[92vh] overflow-y-auto">
         <div class="p-5 sm:p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
             <div class="flex items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
                 <div>
@@ -680,6 +778,13 @@
                     Fechar
                 </button>
             </div>
+
+            {% if quota and quota.cancelamento_agendado %}
+            <div class="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-200 text-xs flex items-center gap-2">
+                <i class="mdi mdi-clock-alert-outline text-base text-amber-400 shrink-0"></i>
+                <span>Renovação automática cancelada. Você pode utilizar seus extratos restantes normalmente até <strong>{{ quota.ciclo_fim_formatado }}</strong>.</span>
+            </div>
+            {% endif %}
 
             {% if not usuario_cpf_cnpj %}
             <div class="p-3 bg-[#141414] rounded-xl border border-white/[0.06] flex flex-col sm:flex-row sm:items-center justify-between gap-3">
@@ -755,12 +860,54 @@
                 </form>
                 {% endfor %}
             </div>
+
+            {% if quota and quota.tier != 'trial' and not quota.cancelamento_agendado and quota.status == 'active' %}
+            <div class="pt-3 border-t border-white/[0.06] flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <span class="text-[11px] text-zinc-400">
+                    Ciclo atual válido até <strong class="text-zinc-200">{{ quota.ciclo_fim_formatado or 'o fim do ciclo' }}</strong>.
+                </span>
+                <form action="/assinaturas/cancelar" method="POST"
+                      onsubmit="return confirm('Tem certeza que deseja cancelar a renovação automática da sua assinatura? Você continuará com acesso aos seus extratos até o final do ciclo atual.');">
+                    <button type="submit"
+                            class="text-[11px] text-zinc-400 hover:text-rose-400 underline transition-colors cursor-pointer">
+                        Cancelar renovação automática
+                    </button>
+                </form>
+            </div>
+            {% endif %}
         </div>
     </dialog>
     {% endif %}
 
     <script>
+        function abrirSidebarMobile() {
+            const sidebar = document.getElementById('sidebar-principal');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar) {
+                sidebar.classList.add('sidebar-aberta');
+                sidebar.classList.remove('-translate-x-full');
+            }
+            if (backdrop) {
+                backdrop.classList.add('backdrop-ativo');
+                backdrop.classList.remove('hidden');
+            }
+        }
+
+        function fecharSidebarMobile() {
+            const sidebar = document.getElementById('sidebar-principal');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar) {
+                sidebar.classList.remove('sidebar-aberta');
+                sidebar.classList.add('-translate-x-full');
+            }
+            if (backdrop) {
+                backdrop.classList.remove('backdrop-ativo');
+                backdrop.classList.add('hidden');
+            }
+        }
+
         function abrirModalPlanos() {
+            fecharSidebarMobile();
             const modal = document.getElementById('modal-planos');
             if (modal) modal.showModal();
         }

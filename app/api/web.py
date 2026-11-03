@@ -14,6 +14,7 @@ from app.api.auth import (
     obter_usuario_logado,
     usuario_possui_avatar,
 )
+from app.api.billing import sincronizar_assinatura_com_asaas
 from app.database.models import Cliente, Contribuicao, JobExtracao
 from app.database.repository import (
     contar_extracos,
@@ -145,6 +146,10 @@ async def renderizar_dashboard(
         )
         metricas_fila = _calcular_metricas_fila(jobs_do_advogado)
         quota_resumo = obter_resumo_quota(db=db, advogado_id=usuario.id)
+        if (
+            quota_resumo.checkout_url or quota_resumo.status != "active"
+        ) and sincronizar_assinatura_com_asaas(db=db, advogado_id=usuario.id):
+            quota_resumo = obter_resumo_quota(db=db, advogado_id=usuario.id)
         planos_comerciais = listar_planos_comerciais()
 
         return templates.TemplateResponse(
