@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.12.0](https://github.com/thalesgmartins/parse-app/compare/v0.11.0...v0.12.0) (2026-11-03)
+
+
+### Features
+
+* **billing:** adicionar cancelamento self-service com preservacao do ciclo vigente ([fbbd350](https://github.com/thalesgmartins/parse-app/commit/fbbd350e18ada5d02c563b6c863fb65609d5d973))
+* **scripts:** adicionar script para conceder plano cortesia ([14e79c6](https://github.com/thalesgmartins/parse-app/commit/14e79c6561fc17057a1ed536ed733874c4c72699))
+* **ui:** implementar responsividade mobile completa em todas as telas ([18fd415](https://github.com/thalesgmartins/parse-app/commit/18fd4150347d596121e21a8f77877aca5c65b936))
+
+
+### Bug Fixes
+
+* **billing,ui:** seguranca financeira no asaas, cortesia e responsividade mobile ([0c73550](https://github.com/thalesgmartins/parse-app/commit/0c73550f177e5755e3e3fe1213b6385170c23e04))
+* **billing:** protecao financeira contra cobranca duplicada e expiracao de ciclo ([6095279](https://github.com/thalesgmartins/parse-app/commit/6095279a38547f37f8369ea40baaf62b7ab64283))
+* **ui:** corrigir posicionamento e abertura/fechamento da sidebar mobile com regras css explicitas e cache-busting ([4c22a94](https://github.com/thalesgmartins/parse-app/commit/4c22a941a7807fc056b823e7c69cac98c7182bd7))
+
 ## [0.11.0](https://github.com/thalesgmartins/parse-app/compare/v0.10.0...v0.11.0) (2026-11-02)
 
 
