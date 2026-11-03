@@ -5,9 +5,56 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ParseApp — Estatísticas e Análise do CNIS</title>
     <link rel="icon" type="image/png" href="/static/images/favicon.png">
-    <link rel="stylesheet" href="/static/css/tailwind.min.css?v=0.10.1">
-    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css?v=0.10.1">
+    <link rel="stylesheet" href="/static/css/tailwind.min.css?v=0.10.2">
+    <link rel="stylesheet" href="/static/css/materialdesignicons.min.css?v=0.10.2">
     <script src="/static/js/htmx.min.js"></script>
+    <style>
+        /* Regras explícitas para garantir funcionamento perfeito do Drawer Mobile */
+        @media (max-width: 767px) {
+            #sidebar-principal {
+                position: fixed !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                left: 0 !important;
+                width: 280px !important;
+                max-width: 82vw !important;
+                height: 100vh !important;
+                z-index: 50 !important;
+                transform: translateX(-100%) !important;
+                transition: transform 0.25s ease-in-out !important;
+                box-shadow: 4px 0 24px rgba(0, 0, 0, 0.6) !important;
+            }
+            #sidebar-principal.sidebar-aberta {
+                transform: translateX(0) !important;
+            }
+            #sidebar-backdrop {
+                position: fixed !important;
+                inset: 0 !important;
+                background-color: rgba(0, 0, 0, 0.75) !important;
+                backdrop-filter: blur(4px) !important;
+                z-index: 40 !important;
+                display: none;
+            }
+            #sidebar-backdrop.backdrop-ativo {
+                display: block !important;
+            }
+        }
+
+        @media (min-width: 768px) {
+            #sidebar-principal {
+                position: sticky !important;
+                top: 0 !important;
+                height: 100vh !important;
+                transform: none !important;
+                width: 16rem !important;
+                flex-shrink: 0 !important;
+                display: flex !important;
+            }
+            #sidebar-backdrop {
+                display: none !important;
+            }
+        }
+    </style>
 </head>
 <body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex flex-col md:flex-row relative">
 
@@ -91,7 +138,7 @@
         <!-- Rodapé da Sidebar: Configurações da Conta e Logout -->
         <div class="space-y-2 pt-4 border-t border-white/[0.06]">
             <button type="button"
-                    onclick="document.getElementById('modal-perfil').showModal()"
+                    onclick="fecharSidebarMobile(); document.getElementById('modal-perfil').showModal();"
                     class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#1e1e1e] font-medium text-xs transition-colors cursor-pointer text-left">
                 <i class="mdi mdi-cog-outline text-base text-zinc-400 shrink-0"></i>
                 <span>Configurações do Perfil</span>
@@ -836,18 +883,31 @@
         function abrirSidebarMobile() {
             const sidebar = document.getElementById('sidebar-principal');
             const backdrop = document.getElementById('sidebar-backdrop');
-            if (sidebar) sidebar.classList.remove('-translate-x-full');
-            if (backdrop) backdrop.classList.remove('hidden');
+            if (sidebar) {
+                sidebar.classList.add('sidebar-aberta');
+                sidebar.classList.remove('-translate-x-full');
+            }
+            if (backdrop) {
+                backdrop.classList.add('backdrop-ativo');
+                backdrop.classList.remove('hidden');
+            }
         }
 
         function fecharSidebarMobile() {
             const sidebar = document.getElementById('sidebar-principal');
             const backdrop = document.getElementById('sidebar-backdrop');
-            if (sidebar) sidebar.classList.add('-translate-x-full');
-            if (backdrop) backdrop.classList.add('hidden');
+            if (sidebar) {
+                sidebar.classList.remove('sidebar-aberta');
+                sidebar.classList.add('-translate-x-full');
+            }
+            if (backdrop) {
+                backdrop.classList.remove('backdrop-ativo');
+                backdrop.classList.add('hidden');
+            }
         }
 
         function abrirModalPlanos() {
+            fecharSidebarMobile();
             const modal = document.getElementById('modal-planos');
             if (modal) modal.showModal();
         }
