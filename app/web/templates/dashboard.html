@@ -19,17 +19,31 @@
         }
     </style>
 </head>
-<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex">
+<body data-user="{{ usuario_email }}" class="bg-[#121212] text-zinc-100 font-sans min-h-screen antialiased selection:bg-[#2a389b] selection:text-white flex flex-col md:flex-row relative">
 
-    <!-- Sidebar Fixa e Padronizada à Esquerda -->
-    <aside class="w-64 shrink-0 bg-[#181818] border-r border-white/[0.06] flex flex-col justify-between min-h-screen sticky top-0 h-screen px-4 py-6 select-none">
+    <!-- Backdrop escuro para fechar a sidebar no mobile -->
+    <div id="sidebar-backdrop"
+         onclick="fecharSidebarMobile()"
+         class="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 hidden transition-opacity md:hidden"></div>
 
-        <!-- Topo da Sidebar: Ícone Azul + ParseApp por extenso e Navegação Global -->
-        <div class="space-y-8">
-            <a href="/dashboard" class="flex items-center gap-3 px-3">
-                <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
-                <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
-            </a>
+    <!-- Sidebar: Drawer no mobile (-translate-x-full) e fixa no desktop (md:translate-x-0) -->
+    <aside id="sidebar-principal"
+           class="fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-[#181818] border-r border-white/[0.08] flex flex-col justify-between h-full px-4 py-6 select-none -translate-x-full transition-transform duration-300 ease-in-out md:static md:w-64 md:shrink-0 md:translate-x-0 md:h-screen md:sticky md:top-0">
+
+        <!-- Topo da Sidebar: Ícone Azul + ParseApp por extenso e Botão Fechar no Mobile -->
+        <div class="space-y-6">
+            <div class="flex items-center justify-between px-3">
+                <a href="/dashboard" class="flex items-center gap-3">
+                    <img src="/static/images/parse-logo.png" alt="Ícone ParseApp" class="w-8 h-8 rounded-lg object-contain border border-white/10">
+                    <span class="text-base font-bold tracking-tight text-white">ParseApp</span>
+                </a>
+                <button type="button"
+                        onclick="fecharSidebarMobile()"
+                        aria-label="Fechar Menu Lateral"
+                        class="md:hidden p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-[#252525] cursor-pointer">
+                    <i class="mdi mdi-close text-xl"></i>
+                </button>
+            </div>
 
             <nav class="space-y-1.5">
                 <a href="/dashboard"
@@ -107,24 +121,38 @@
     <!-- Área Principal Direita -->
     <div class="flex-1 flex flex-col min-w-0">
 
-        <!-- Header Superior: Busca Discreta, Saudação e Avatar Clicável -->
-        <header class="h-18 px-6 lg:px-10 py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between gap-4">
+        <!-- Header Superior: Hamburger Mobile, Busca Discreta e Avatar Clicável -->
+        <header class="min-h-16 px-4 sm:px-6 lg:px-10 py-3 sm:py-4 border-b border-white/[0.06] bg-[#121212]/90 backdrop-blur-md sticky top-0 z-20 flex items-center justify-between gap-3 sm:gap-4">
+
+            <!-- Botão Hamburger no Mobile + Brand Logo Compacto -->
+            <div class="flex items-center gap-2.5 md:hidden shrink-0">
+                <button type="button"
+                        onclick="abrirSidebarMobile()"
+                        aria-label="Abrir Menu Lateral"
+                        class="p-2 text-zinc-300 hover:text-white bg-[#1e1e1e] border border-white/10 rounded-xl cursor-pointer">
+                    <i class="mdi mdi-menu text-xl"></i>
+                </button>
+                <a href="/dashboard" class="flex items-center gap-2">
+                    <img src="/static/images/parse-logo.png" alt="Logo" class="w-7 h-7 rounded-md object-contain border border-white/10">
+                    <span class="text-sm font-bold text-white tracking-tight sm:hidden">ParseApp</span>
+                </a>
+            </div>
 
             <!-- Barra de Busca Discreta -->
-            <div class="relative w-full max-w-md">
+            <div class="relative flex-1 max-w-md">
                 <span class="absolute inset-y-0 left-0 flex items-center pl-3.5 pointer-events-none text-zinc-500">
                     <i class="mdi mdi-magnify text-base"></i>
                 </span>
                 <input type="search"
                        id="busca-dashboard"
                        oninput="filtrarDashboard(this.value)"
-                       placeholder="Buscar segurado, CPF ou arquivo CNIS..."
-                       class="w-full pl-10 pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
+                       placeholder="Buscar segurado, CPF..."
+                       class="w-full pl-10 pr-3 sm:pr-4 py-2 bg-[#1e1e1e] border border-white/[0.06] rounded-xl text-xs text-zinc-200 placeholder-zinc-500 focus:outline-none focus:border-[#2a389b] focus:ring-1 focus:ring-[#2a389b] transition-all">
             </div>
 
             <!-- Indicadores Rápidos, Saudação e Botão de Perfil/Avatar -->
-            <div class="flex items-center gap-3 sm:gap-4 shrink-0">
-                <div class="hidden md:flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-full text-xs">
+            <div class="flex items-center gap-2 sm:gap-4 shrink-0">
+                <div class="hidden lg:flex items-center gap-2 bg-[#1e1e1e] border border-white/[0.06] px-3 py-1.5 rounded-full text-xs">
                     <span class="w-5 h-5 rounded-full bg-[#2a389b] text-white flex items-center justify-center text-[10px] font-bold">
                         {{ total_extracos }}
                     </span>
@@ -136,8 +164,8 @@
                 <button type="button"
                         onclick="document.getElementById('modal-perfil').showModal()"
                         title="Clique para alterar foto, nome ou senha"
-                        class="flex items-center gap-3 group cursor-pointer text-left rounded-full p-1 pr-2 hover:bg-[#1e1e1e] transition-colors">
-                    <div class="w-9 h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
+                        class="flex items-center gap-2.5 group cursor-pointer text-left rounded-full p-1 sm:pr-2 hover:bg-[#1e1e1e] transition-colors">
+                    <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#2a389b] text-white font-bold text-xs flex items-center justify-center border border-white/15 shadow-sm overflow-hidden group-hover:ring-2 group-hover:ring-[#2a389b] transition-all">
                         {% if tem_avatar %}
                         <img src="/auth/avatar" alt="Foto de perfil" class="w-full h-full object-cover">
                         {% elif avatar_url %}
@@ -157,7 +185,7 @@
         </header>
 
         <!-- Conteúdo Modular Principal -->
-        <main class="p-6 lg:p-10 space-y-8 max-w-7xl w-full mx-auto">
+        <main class="p-4 sm:p-6 lg:p-10 space-y-6 sm:space-y-8 max-w-7xl w-full mx-auto">
 
             {% if sucesso_plano %}
             <div class="p-4 bg-[#2a389b]/20 border border-[#2a389b]/60 rounded-2xl text-xs text-white flex items-center justify-between gap-3">
@@ -178,16 +206,16 @@
             {% endif %}
 
             <!-- Grande Card Central de Destaque: Upload do PDF CNIS -->
-            <section class="hero-card-surface rounded-[22px] p-6 sm:p-8 border border-white/[0.08] shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            <section class="hero-card-surface rounded-[22px] p-4 sm:p-6 lg:p-8 border border-white/[0.08] shadow-xl grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-8 items-center">
 
                 <!-- Coluna Esquerda do Card: Resumo Limpo e Direto -->
-                <div class="lg:col-span-5 space-y-4">
+                <div class="lg:col-span-5 space-y-3 sm:space-y-4">
                     <span class="inline-flex items-center gap-2 text-xs font-medium text-[#79b5b9]">
                         <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
                         Extração Automatizada Meu INSS
                     </span>
 
-                    <h1 class="text-2xl sm:text-3xl font-bold text-white tracking-tight leading-tight">
+                    <h1 class="text-xl sm:text-2xl lg:text-3xl font-bold text-white tracking-tight leading-tight">
                         Você já consolidou {{ total_extracos }} extratos e {{ clientes|length }} segurados
                     </h1>
 
@@ -197,7 +225,7 @@
                 </div>
 
                 <!-- Coluna Direita do Card: Dropzone Interativa de Upload PDF -->
-                <div class="lg:col-span-7 bg-[#161618]/90 rounded-2xl p-5 sm:p-6 border border-white/[0.07]">
+                <div class="lg:col-span-7 bg-[#161618]/90 rounded-2xl p-4 sm:p-6 border border-white/[0.07]">
                     <form hx-post="/cnis/extrair-html"
                           hx-encoding="multipart/form-data"
                           hx-target="#resultado-aqui"
@@ -205,12 +233,12 @@
                           hx-disabled-elt="#btn-extrair"
                           class="space-y-4">
 
-                        <div class="flex items-center justify-between">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                             <div>
                                 <h2 class="text-sm font-bold text-white">Upload de Extratos CNIS (.pdf)</h2>
                                 <p class="text-[11px] text-zinc-400">Arraste um ou mais documentos PDF ou clique abaixo para selecionar em lote</p>
                             </div>
-                            <span class="text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40">
+                            <span class="text-[10px] font-mono font-semibold uppercase tracking-wider px-2.5 py-1 rounded-md bg-[#2a389b]/25 text-[#93a3ff] border border-[#2a389b]/40 self-start sm:self-auto">
                                 Upload Único ou Lote
                             </span>
                         </div>
@@ -218,7 +246,7 @@
                         <!-- Área Drag-and-Drop com Suporte a Múltiplos Arquivos -->
                         <div id="dropzone"
                              onclick="document.getElementById('arquivo-input').click()"
-                             class="border-2 border-dashed border-zinc-700 hover:border-[#2a389b] rounded-2xl p-6 sm:p-8 text-center bg-[#1e1e1e]/70 hover:bg-[#2a389b]/[0.08] transition-all cursor-pointer relative select-none">
+                             class="border-2 border-dashed border-zinc-700 hover:border-[#2a389b] rounded-2xl p-4 sm:p-6 lg:p-8 text-center bg-[#1e1e1e]/70 hover:bg-[#2a389b]/[0.08] transition-all cursor-pointer relative select-none">
                             <input type="file"
                                    name="arquivo"
                                    id="arquivo-input"
@@ -457,8 +485,8 @@
     </div>
 
     <!-- Modal de Configurações do Perfil (Foto, Nome e Senha) -->
-    <dialog id="modal-perfil" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto">
-        <div class="p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
+    <dialog id="modal-perfil" style="max-width: 28rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-md w-full m-auto my-auto max-h-[92vh] overflow-y-auto">
+        <div class="p-5 sm:p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
             <div class="flex items-center justify-between pb-3 border-b border-white/[0.08]">
                 <h3 class="text-sm font-bold text-white flex items-center gap-2">
                     <span class="w-2 h-2 rounded-full bg-[#2a389b]"></span>
@@ -554,7 +582,7 @@
 
     {% if planos %}
     <!-- Modal de Planos (3 Tiers) -->
-    <dialog id="modal-planos" style="max-width: 46rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-4xl w-full m-auto">
+    <dialog id="modal-planos" style="max-width: 46rem; width: calc(100% - 2rem);" class="rounded-2xl p-0 backdrop:bg-black/75 bg-transparent shadow-2xl max-w-4xl w-full m-auto my-auto max-h-[92vh] overflow-y-auto">
         <div class="p-5 sm:p-6 bg-[#1e1e1e] text-zinc-100 rounded-2xl border border-white/10 space-y-5">
             <div class="flex items-center justify-between gap-3 pb-3 border-b border-white/[0.08]">
                 <div>
@@ -674,6 +702,20 @@
     {% endif %}
 
     <script>
+        function abrirSidebarMobile() {
+            const sidebar = document.getElementById('sidebar-principal');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar) sidebar.classList.remove('-translate-x-full');
+            if (backdrop) backdrop.classList.remove('hidden');
+        }
+
+        function fecharSidebarMobile() {
+            const sidebar = document.getElementById('sidebar-principal');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar) sidebar.classList.add('-translate-x-full');
+            if (backdrop) backdrop.classList.add('hidden');
+        }
+
         function abrirModalPlanos() {
             const modal = document.getElementById('modal-planos');
             if (modal) modal.showModal();
