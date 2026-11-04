@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.12.1](https://github.com/thalesgmartins/parse-app/compare/v0.12.0...v0.12.1) (2026-11-04)
+
+
+### Documentation
+
+* atualizar README com novas funcionalidades e arquitetura da v0.12.0 ([cf7fece](https://github.com/thalesgmartins/parse-app/commit/cf7fecedc21ac3bc13b406611e2fbf6f09ced24d))
+* atualizar README com novas funcionalidades e arquitetura da v0.12.0 ([40f3390](https://github.com/thalesgmartins/parse-app/commit/40f339090e2baeece9a1b0c10a9b291a4f2067ef))
+
 ## [0.12.0](https://github.com/thalesgmartins/parse-app/compare/v0.11.0...v0.12.0) (2026-11-03)
 
 
