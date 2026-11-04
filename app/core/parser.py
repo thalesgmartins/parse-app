@@ -2,6 +2,7 @@
 
 import logging
 import re
+from abc import ABC, abstractmethod
 from pathlib import Path
 
 import pdfplumber
@@ -11,7 +12,9 @@ from app.core.schemas import CnisCompetencia
 _LOGGER = logging.getLogger(__name__)
 
 RE_DATA = re.compile(r"^\d{2}/\d{4}$")
+RE_DATA_COMPLETA = re.compile(r"^\d{2}/\d{2}/\d{4}$")
 RE_VALOR_BR = re.compile(r"^(?:\d{1,3}(?:\.\d{3})*|\d+),\d{2}$")
+
 _TERMOS_CABECALHO_CNIS = (
     "CNIS",
     "CADASTRO NACIONAL DE INFORMA",
@@ -23,7 +26,241 @@ _TERMOS_CABECALHO_CNIS = (
     "NIT",
     "REMUNERACOES",
     "REMUNERAÇÕES",
+    "CONTRIBUIÇÕES",
+    "CONTRIBUICOES",
+    "SALÁRIO DE CONTRIBUIÇÃO",
+    "SALARIO DE CONTRIBUICAO",
+    "CONTRIBUINTE INDIVIDUAL",
 )
+
+
+class BaseExtractorStrategy(ABC):
+    """Contrato abstrato para estratégias de extração de competências do CNIS."""
+
+    @abstractmethod
+    def tentar_extrair(
+        self,
+        partes: list[str],
+        indice: int,
+    ) -> tuple[CnisCompetencia, int] | None:
+        """Tenta extrair uma competência a partir do índice atual na lista de tokens.
+
+        Args:
+            partes: Lista de tokens da linha textual.
+            indice: Posição inicial para análise dos tokens.
+
+        Returns:
+            Tupla contendo a competência extraída e o próximo índice a ser processado,
+            ou None caso o padrão não seja correspondente.
+        """
+
+
+class ContribuinteIndividualExtractorStrategy(BaseExtractorStrategy):
+    """Estratégia para recolhimentos de Contribuinte Individual (Carnê/GPS).
+
+    Identifica o padrão:
+    [Competência MM/AAAA] [Data Pgto DD/MM/AAAA] [Contribuição R$]
+    [Salário Contribuição R$] [Indicadores...]
+    Extrai como valor o Salário de Contribuição (base de cálculo oficial da Previdência).
+    """
+
+    def tentar_extrair(
+        self,
+        partes: list[str],
+        indice: int,
+    ) -> tuple[CnisCompetencia, int] | None:
+        """Extrai competência de contribuinte individual com salário de contribuição.
+
+        Args:
+            partes: Lista de tokens da linha.
+            indice: Índice inicial da competência.
+
+        Returns:
+            Tupla (competência, próximo índice) se casar o padrão, None caso contrário.
+        """
+        n = len(partes)
+        if indice + 3 >= n:
+            return None
+
+        comp = partes[indice]
+        if not RE_DATA.match(comp):
+            return None
+
+        if (
+            RE_DATA_COMPLETA.match(partes[indice + 1])
+            and RE_VALOR_BR.match(partes[indice + 2])
+            and RE_VALOR_BR.match(partes[indice + 3])
+        ):
+            salario_base = partes[indice + 3]
+            indicadores: list[str] = []
+            proximo = indice + 4
+            while proximo < n and not RE_DATA.match(partes[proximo]):
+                indicadores.append(partes[proximo])
+                proximo += 1
+
+            item = CnisCompetencia(
+                data_competencia=comp,
+                valor=salario_base,
+                origem_vinculo="Contribuinte Individual / Carnê",
+                indicadores=indicadores,
+            )
+            return item, proximo
+
+        return None
+
+
+class AgrupamentoContratantesExtractorStrategy(BaseExtractorStrategy):
+    """Estratégia para cooperativas e agrupamento de contratantes.
+
+    Identifica linhas com competência seguida de CNPJ/identificadores, forma de
+    prestação de serviço e o valor da remuneração informada pela tomadora.
+    """
+
+    def tentar_extrair(
+        self,
+        partes: list[str],
+        indice: int,
+    ) -> tuple[CnisCompetencia, int] | None:
+        """Extrai competência de agrupamento de contratantes ou cooperativas.
+
+        Args:
+            partes: Lista de tokens da linha.
+            indice: Índice inicial da competência.
+
+        Returns:
+            Tupla (competência, próximo índice) se casar o padrão, None caso contrário.
+        """
+        n = len(partes)
+        if indice + 2 >= n:
+            return None
+
+        comp = partes[indice]
+        if not RE_DATA.match(comp):
+            return None
+
+        posicao_valor: int | None = None
+        j = indice + 1
+        while j < n and not RE_DATA.match(partes[j]):
+            if RE_VALOR_BR.match(partes[j]):
+                posicao_valor = j
+                break
+            j += 1
+
+        if posicao_valor is not None and posicao_valor > indice + 1:
+            valor_remuneracao = partes[posicao_valor]
+            indicadores: list[str] = []
+            proximo = posicao_valor + 1
+            while proximo < n and not RE_DATA.match(partes[proximo]):
+                indicadores.append(partes[proximo])
+                proximo += 1
+
+            item = CnisCompetencia(
+                data_competencia=comp,
+                valor=valor_remuneracao,
+                origem_vinculo="Cooperativa / Contratante",
+                indicadores=indicadores,
+            )
+            return item, proximo
+
+        return None
+
+
+class CltRemuneracaoExtractorStrategy(BaseExtractorStrategy):
+    """Estratégia padrão para vínculos empregatícios (CLT / Estatutário).
+
+    Identifica o padrão:
+    [Competência MM/AAAA] [Remuneração R$] [Indicadores...]
+    Suporta colunas paralelas dispostas lado a lado na mesma linha do relatório.
+    """
+
+    def tentar_extrair(
+        self,
+        partes: list[str],
+        indice: int,
+    ) -> tuple[CnisCompetencia, int] | None:
+        """Extrai competência CLT ou emprego padrão.
+
+        Args:
+            partes: Lista de tokens da linha.
+            indice: Índice inicial da competência.
+
+        Returns:
+            Tupla (competência, próximo índice) se casar o padrão, None caso contrário.
+        """
+        n = len(partes)
+        if indice + 1 >= n:
+            return None
+
+        comp = partes[indice]
+        if not RE_DATA.match(comp):
+            return None
+
+        valor_candidato = partes[indice + 1]
+        if RE_VALOR_BR.match(valor_candidato):
+            indicadores: list[str] = []
+            proximo = indice + 2
+            while proximo < n and not RE_DATA.match(partes[proximo]):
+                indicadores.append(partes[proximo])
+                proximo += 1
+
+            item = CnisCompetencia(
+                data_competencia=comp,
+                valor=valor_candidato,
+                origem_vinculo="CLT / Emprego",
+                indicadores=indicadores,
+            )
+            return item, proximo
+
+        return None
+
+
+class CnisParserPipeline:
+    """Coordenador do pipeline de extração de tabelas do extrato CNIS."""
+
+    def __init__(self, estrategias: list[BaseExtractorStrategy] | None = None) -> None:
+        """Inicializa o pipeline com a cadeia de estratégias em ordem de prioridade.
+
+        Args:
+            estrategias: Lista opcional de estratégias de extração personalizadas.
+        """
+        self._estrategias = estrategias or [
+            ContribuinteIndividualExtractorStrategy(),
+            AgrupamentoContratantesExtractorStrategy(),
+            CltRemuneracaoExtractorStrategy(),
+        ]
+
+    def extrair_linha(self, partes: list[str]) -> list[CnisCompetencia]:
+        """Processa os tokens de uma linha buscando competências em qualquer padrão.
+
+        Args:
+            partes: Lista de tokens obtidos pela quebra de linha por espaços.
+
+        Returns:
+            Lista de competências estruturadas encontradas na linha.
+        """
+        resultados: list[CnisCompetencia] = []
+        i = 0
+        n = len(partes)
+
+        while i < n:
+            if not RE_DATA.match(partes[i]):
+                i += 1
+                continue
+
+            casou = False
+            for estrategia in self._estrategias:
+                resultado = estrategia.tentar_extrair(partes, i)
+                if resultado is not None:
+                    item, proximo_i = resultado
+                    resultados.append(item)
+                    i = proximo_i
+                    casou = True
+                    break
+
+            if not casou:
+                i += 1
+
+        return resultados
 
 
 def validar_texto_cabecalho_cnis(texto: str) -> bool:
@@ -69,51 +306,57 @@ def validar_cabecalho_cnis_rapido(caminho_arquivo: Path | str) -> bool:
 
 
 def processar_linhas_cnis(linhas: list[str]) -> list[CnisCompetencia]:
-    """Processa linhas de texto do CNIS extraindo pares de competência e valor.
+    """Processa linhas de texto do CNIS extraindo competências em qualquer padrão.
 
-    O extrato previdenciário frequentemente organiza as remunerações em até 3
-    colunas paralelas, gerando múltiplos pares sequenciais de data e valor em
-    uma única linha textual.
+    O extrato previdenciário pode organizar as remunerações ou salários de
+    contribuição em múltiplas colunas paralelas, cobrindo tanto vínculos CLT
+    quanto Contribuinte Individual e Cooperativas.
 
     Args:
         linhas: Lista de strings com o conteúdo textual bruto das páginas.
 
     Returns:
-        Lista de competências estruturadas e validadas.
+        Lista de competências estruturadas e validadas ordenadas cronologicamente.
     """
+    pipeline = CnisParserPipeline()
     resultados: list[CnisCompetencia] = []
 
     for linha in linhas:
         partes = linha.split()
-        if not partes or not RE_DATA.match(partes[0]):
+        if not partes:
             continue
-
-        _LOGGER.debug("Processando partes filtradas: %s", partes)
-        i = 0
-        while i + 1 < len(partes):
-            competencia = partes[i]
-            valor_candidato = partes[i + 1]
-
-            if RE_DATA.match(competencia) and RE_VALOR_BR.match(valor_candidato):
-                try:
-                    item = CnisCompetencia(
-                        data_competencia=competencia,
-                        valor=valor_candidato,
-                    )
-                    resultados.append(item)
-                except (ValueError, TypeError) as exc:
-                    _LOGGER.debug(
-                        "Falha na validação do par (%s, %s): %s",
-                        competencia,
-                        valor_candidato,
-                        exc,
-                    )
-                i += 2
-            else:
-                break
+        itens_linha = pipeline.extrair_linha(partes)
+        if itens_linha:
+            resultados.extend(itens_linha)
 
     resultados.sort(key=_chave_ordenacao_competencia)
     return resultados
+
+
+def consolidar_competencias_maior_valor(
+    competencias: list[CnisCompetencia],
+) -> list[CnisCompetencia]:
+    """Consolida competências mantendo a ocorrência de maior valor monetário.
+
+    Em casos de vínculos concomitantes no mesmo mês/ano (ex: CLT simultâneo a
+    Contribuinte Individual), preserva-se o registro de maior remuneração/salário
+    para evitar tempo em dobro e subavaliação do cálculo de benefícios.
+
+    Args:
+        competencias: Lista de competências extraídas, podendo conter repetições.
+
+    Returns:
+        Lista ordenada cronologicamente contendo apenas uma competência por mês/ano.
+    """
+    mapa: dict[str, CnisCompetencia] = {}
+    for item in competencias:
+        chave = item.data_competencia
+        if chave not in mapa or float(item.valor) > float(mapa[chave].valor):
+            mapa[chave] = item
+
+    resultado = list(mapa.values())
+    resultado.sort(key=_chave_ordenacao_competencia)
+    return resultado
 
 
 def _chave_ordenacao_competencia(item: CnisCompetencia) -> tuple[int, int]:
@@ -134,7 +377,10 @@ def _chave_ordenacao_competencia(item: CnisCompetencia) -> tuple[int, int]:
     return (0, 0)
 
 
-def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
+def extrair_dados_pdf(
+    caminho_arquivo: Path | str,
+    consolidar: bool = False,
+) -> list[CnisCompetencia]:
     """Extrai texto de todas as páginas do PDF e processa as competências.
 
     Realiza validação rápida (Fail-Fast) na primeira página para abortar
@@ -142,6 +388,7 @@ def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
 
     Args:
         caminho_arquivo: Caminho do arquivo PDF do extrato CNIS a ser lido.
+        consolidar: Se True, consolida competências concomitantes pelo maior valor.
 
     Returns:
         Lista de competências identificadas no documento.
@@ -162,6 +409,11 @@ def extrair_dados_pdf(caminho_arquivo: Path | str) -> list[CnisCompetencia]:
             texto = pagina.extract_text()
             if texto:
                 todas_as_linhas.extend(texto.split("\n"))
+
+    dados = processar_linhas_cnis(todas_as_linhas)
+    if consolidar:
+        return consolidar_competencias_maior_valor(dados)
+    return dados
 
     return processar_linhas_cnis(todas_as_linhas)
 

@@ -1,13 +1,22 @@
 """Schemas de validação e transferência de dados (DTOs)."""
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, Field, field_validator
 
 
 class CnisCompetencia(BaseModel):
-    """Representação estruturada de uma competência previdenciária e sua remuneração."""
+    """Representação estruturada de uma competência previdenciária e sua remuneração.
+
+    Attributes:
+        data_competencia: Competência no formato MM/AAAA.
+        valor: Valor monetário da remuneração ou salário de contribuição base.
+        origem_vinculo: Tipo de vínculo identificado (ex: CLT, Contribuinte Individual).
+        indicadores: Lista de códigos de indicadores previdenciários associados.
+    """
 
     data_competencia: str
     valor: float | str
+    origem_vinculo: str | None = None
+    indicadores: list[str] = Field(default_factory=list)
 
     @field_validator("valor", mode="before")
     @classmethod

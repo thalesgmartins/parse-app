@@ -115,6 +115,7 @@ def test_processar_linhas_interrompe_ao_encontrar_indicador_ou_invalido() -> Non
     assert len(resultado) == 1
     assert resultado[0].data_competencia == "01/2024"
     assert resultado[0].valor == 1412.00
+    assert "INDICADOR_EXTRA" in resultado[0].indicadores
 
 
 def test_processar_linhas_ordenacao_cronologica_estrita() -> None:
@@ -194,3 +195,84 @@ def test_extrair_metadados_pdf_arquivo_inexistente() -> None:
     # Assert
     assert nome is None
     assert cpf is None
+
+
+def test_processar_linhas_contribuinte_individual_salario_contribuicao() -> None:
+    """Valida extração de autônomo capturando o Salário Contribuição e indicadores."""
+    # Arrange: 2 competências paralelas com data de pgto, valor pago e salário base
+    linhas = [
+        "01/2015 14/01/2015 144,80 724,00 PREC-MENOR-MIN 02/2015 18/03/2015 157,60 788,00",
+    ]
+
+    # Act
+    resultado = processar_linhas_cnis(linhas)
+
+    # Assert
+    assert len(resultado) == 2
+    # Competência 01/2015 deve pegar o salário de 724.00, NÃO a guia de 144.80
+    assert resultado[0].data_competencia == "01/2015"
+    assert resultado[0].valor == 724.00
+    assert resultado[0].origem_vinculo == "Contribuinte Individual / Carnê"
+    assert "PREC-MENOR-MIN" in resultado[0].indicadores
+
+    # Competência 02/2015 deve pegar o salário de 788.00
+    assert resultado[1].data_competencia == "02/2015"
+    assert resultado[1].valor == 788.00
+    assert resultado[1].origem_vinculo == "Contribuinte Individual / Carnê"
+
+
+def test_processar_linhas_agrupamento_contratantes_cooperativa() -> None:
+    """Valida extração de cooperativas e contratantes tomadoras de serviço."""
+    # Arrange
+    linhas = [
+        "10/2013 89.522.064/0001-66 89.522.064/0001-66 Normal 75,00 PREM-EXT",
+        "04/2014 89.522.064 89.522.064/0001-66 Não Cooperado 90,00",
+    ]
+
+    # Act
+    resultado = processar_linhas_cnis(linhas)
+
+    # Assert
+    assert len(resultado) == 2
+    assert resultado[0].data_competencia == "10/2013"
+    assert resultado[0].valor == 75.00
+    assert resultado[0].origem_vinculo == "Cooperativa / Contratante"
+    assert "PREM-EXT" in resultado[0].indicadores
+
+    assert resultado[1].data_competencia == "04/2014"
+    assert resultado[1].valor == 90.00
+    assert resultado[1].origem_vinculo == "Cooperativa / Contratante"
+
+
+def test_consolidar_competencias_maior_valor_concomitancia() -> None:
+    """Verifica que a consolidação mantém o maior valor em atividades concomitantes."""
+    from app.core.parser import consolidar_competencias_maior_valor
+    from app.core.schemas import CnisCompetencia
+
+    # Arrange: mesmo mês em vínculos distintos com valores diferentes
+    competencias = [
+        CnisCompetencia(
+            data_competencia="05/2015",
+            valor=2000.00,
+            origem_vinculo="CLT / Emprego",
+        ),
+        CnisCompetencia(
+            data_competencia="05/2015",
+            valor=3500.00,
+            origem_vinculo="Contribuinte Individual / Carnê",
+        ),
+        CnisCompetencia(
+            data_competencia="06/2015",
+            valor=1800.00,
+            origem_vinculo="CLT / Emprego",
+        ),
+    ]
+
+    # Act
+    consolidadas = consolidar_competencias_maior_valor(competencias)
+
+    # Assert
+    assert len(consolidadas) == 2
+    mapa = {c.data_competencia: c.valor for c in consolidadas}
+    assert mapa["05/2015"] == 3500.00  # O maior valor entre 2000 e 3500 deve prevalecer
+    assert mapa["06/2015"] == 1800.00
