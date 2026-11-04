@@ -289,18 +289,18 @@ def test_salvar_ou_atualizar_contribuicoes_idempotente(db_session: Session) -> N
 def test_salvar_ou_atualizar_contribuicoes_com_duplicadas_no_mesmo_lote_e_legado(
     db_session: Session,
 ) -> None:
-    """Garante que competências repetidas atualizem pela última leitura sem duplicar."""
+    """Garante que competências repetidas preservem a de maior valor sem duplicar."""
     # Arrange
     advogado = criar_advogado(
         db_session, nome="Dr. Deduplica", email="dedup@teste.com", senha="123"
     )
     cliente = criar_cliente(db_session, advogado_id=advogado.id, nome="Segurado Thales")
 
-    # Simula lote contendo a mesma competência repetida (ex: múltiplos vínculos ou leituras)
+    # Simula lote contendo a mesma competência repetida (ex: múltiplos vínculos concomitantes)
     lote_com_repeticoes = [
         CnisCompetencia(data_competencia="10/2024", valor=1775.06),
         CnisCompetencia(data_competencia="11/2024", valor=1753.98),
-        CnisCompetencia(data_competencia="10/2024", valor=876.08),  # Última leitura de 10/2024
+        CnisCompetencia(data_competencia="10/2024", valor=876.08),  # Vínculo concomitante menor
     ]
 
     # Act
@@ -310,8 +310,8 @@ def test_salvar_ou_atualizar_contribuicoes_com_duplicadas_no_mesmo_lote_e_legado
     clientes = listar_clientes(db_session, advogado_id=advogado.id)
     contribuicoes = clientes[0].contribuicoes
 
-    # Apenas 2 competências únicas (10/2024 e 11/2024), sem duplicar 10/2024
+    # Apenas 2 competências únicas (10/2024 e 11/2024), mantendo a de maior valor
     assert len(contribuicoes) == 2
     mapa = {c.data_competencia: c.valor for c in contribuicoes}
-    assert mapa["10/2024"] == 876.08  # Atualizado com base na última leitura
+    assert mapa["10/2024"] == 1775.06  # Prevalência do maior valor para evitar subavaliação
     assert mapa["11/2024"] == 1753.98

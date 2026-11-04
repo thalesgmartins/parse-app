@@ -325,6 +325,9 @@ def salvar_contribuicoes(
 ) -> list[Contribuicao]:
     """Salva a lista de competências e salários vinculados a um cliente e/ou job.
 
+    Consolida duplicidades no lote preservando o maior valor por competência
+    para evitar tempo em dobro e violações de unicidade no banco.
+
     Args:
         db: Sessão ativa do SQLAlchemy.
         cliente_id: Identificador do cliente (opcional).
@@ -340,14 +343,22 @@ def salvar_contribuicoes(
         else uuid.UUID(str(cliente_id))
     )
     j_uuid = job_id if (job_id is None or isinstance(job_id, uuid.UUID)) else uuid.UUID(str(job_id))
+
+    # Consolida competências preservando a de maior valor em concomitâncias
+    maiores_leituras: dict[str, CnisCompetencia] = {}
+    for item in lista:
+        comp = item.data_competencia
+        if comp not in maiores_leituras or float(item.valor) > float(maiores_leituras[comp].valor):
+            maiores_leituras[comp] = item
+
     novas_contribuicoes: list[Contribuicao] = [
         Contribuicao(
             cliente_id=c_uuid,
             job_id=j_uuid,
             data_competencia=c.data_competencia,
-            valor=c.valor,
+            valor=float(c.valor),
         )
-        for c in lista
+        for c in maiores_leituras.values()
     ]
     db.add_all(novas_contribuicoes)
     db.commit()
@@ -364,7 +375,8 @@ def salvar_ou_atualizar_contribuicoes(
 
     Garante idempotência e integridade previdenciária unificando os registros
     de múltiplos extratos para o mesmo cliente sem duplicar competências.
-    Atualiza com base na última leitura recebida se houver competências repetidas.
+    Em casos de atividades concomitantes (mesmo mês/ano), preserva a ocorrência
+    de maior valor para evitar contagem de tempo duplo e subavaliação.
 
     Args:
         db: Sessão ativa do SQLAlchemy.
@@ -378,10 +390,12 @@ def salvar_ou_atualizar_contribuicoes(
     cli_uuid = cliente_id if isinstance(cliente_id, uuid.UUID) else uuid.UUID(str(cliente_id))
     j_uuid = job_id if (job_id is None or isinstance(job_id, uuid.UUID)) else uuid.UUID(str(job_id))
 
-    # Agrupa por competência mantendo a última leitura para cada mês
-    ultimas_leituras: dict[str, CnisCompetencia] = {}
+    # Agrupa por competência mantendo a de maior valor monetário
+    maiores_leituras: dict[str, CnisCompetencia] = {}
     for item in lista:
-        ultimas_leituras[item.data_competencia] = item
+        comp = item.data_competencia
+        if comp not in maiores_leituras or float(item.valor) > float(maiores_leituras[comp].valor):
+            maiores_leituras[comp] = item
 
     contribuicoes_existentes = db.scalars(
         select(Contribuicao).where(Contribuicao.cliente_id == cli_uuid)
@@ -396,18 +410,21 @@ def salvar_ou_atualizar_contribuicoes(
             mapa_existentes[c.data_competencia] = c
 
     resultado: list[Contribuicao] = []
-    for data_comp, item in ultimas_leituras.items():
+    for data_comp, item in maiores_leituras.items():
         if data_comp in mapa_existentes:
             contribuicao = mapa_existentes[data_comp]
-            contribuicao.valor = float(item.valor)
-            contribuicao.job_id = j_uuid
+            # Mantém sempre o maior valor entre o histórico existente e o novo registro
+            novo_valor = float(item.valor)
+            if novo_valor >= float(contribuicao.valor):
+                contribuicao.valor = novo_valor
+                contribuicao.job_id = j_uuid
             resultado.append(contribuicao)
         else:
             nova = Contribuicao(
                 cliente_id=cli_uuid,
                 job_id=j_uuid,
                 data_competencia=data_comp,
-                valor=item.valor,
+                valor=float(item.valor),
             )
             db.add(nova)
             mapa_existentes[data_comp] = nova
