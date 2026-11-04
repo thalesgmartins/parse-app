@@ -51,7 +51,7 @@ def create_access_token(
     Returns:
         Token JWT assinado.
     """
-    to_encode = data.copy()
+    to_encode: dict[str, str | datetime] = dict(data)
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )

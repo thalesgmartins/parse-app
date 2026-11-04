@@ -57,10 +57,11 @@ async def lifespan(app: FastAPI):
                     )
                     resultado = db.execute(stmt)
                     db.commit()
-                    if resultado.rowcount:
+                    linhas_afetadas = getattr(resultado, "rowcount", 0)
+                    if linhas_afetadas:
                         _LOGGER.info(
                             "Recuperados %d jobs de extração para a fila pendente.",
-                            resultado.rowcount,
+                            linhas_afetadas,
                         )
 
                         async def _processar_fila_recuperada():
